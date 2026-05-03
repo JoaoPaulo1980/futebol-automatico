@@ -1,0 +1,1805 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Futebol Automático</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap');
+
+  :root {
+    --bg: #080810;
+    --surface: #10101a;
+    --surface2: #18182a;
+    --border: #252538;
+    --green: #00e676;
+    --green-dim: #00e67618;
+    --red: #ff3d57;
+    --red-dim: #ff3d5718;
+    --yellow: #ffd740;
+    --yellow-dim: #ffd74018;
+    --blue: #2979ff;
+    --blue-dim: #2979ff18;
+    --purple: #7c5cfc;
+    --purple-dim: #7c5cfc18;
+    --orange: #ff6d00;
+    --orange-dim: #ff6d0018;
+    --cyan: #00e5ff;
+    --cyan-dim: #00e5ff18;
+    --text: #e8e8f0;
+    --muted: #5a5a78;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; min-height: 100vh; padding-bottom: 100px; }
+
+  /* ── HEADER ── */
+  .header {
+    background: linear-gradient(160deg, #0d0d1f 0%, #10101a 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 18px 16px 14px;
+  }
+
+  .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+
+  .logo { font-size: 20px; font-weight: 800; background: linear-gradient(90deg, var(--green), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px; }
+
+  .logo-sub { font-size: 10px; color: var(--muted); font-family: 'Space Mono', monospace; margin-top: 1px; }
+
+  .header-badge { background: var(--green-dim); border: 1px solid var(--green); border-radius: 20px; padding: 4px 10px; font-size: 10px; color: var(--green); font-family: 'Space Mono', monospace; font-weight: 700; }
+
+  /* ── TOOL CARDS (home screen) ── */
+  .home-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px; }
+
+  .tool-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .tool-card:active { transform: scale(0.97); }
+
+  .tool-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .tool-card.c-green::before { background: var(--green); }
+  .tool-card.c-blue::before { background: var(--blue); }
+  .tool-card.c-purple::before { background: var(--purple); }
+  .tool-card.c-yellow::before { background: var(--yellow); }
+  .tool-card.c-orange::before { background: var(--orange); }
+  .tool-card.c-cyan::before { background: var(--cyan); }
+  .tool-card.c-red::before { background: var(--red); }
+
+  .tool-icon { font-size: 28px; margin-bottom: 10px; }
+
+  .tool-name { font-size: 13px; font-weight: 800; margin-bottom: 4px; }
+  .tool-card.c-green .tool-name { color: var(--green); }
+  .tool-card.c-blue .tool-name { color: var(--blue); }
+  .tool-card.c-purple .tool-name { color: var(--purple); }
+  .tool-card.c-yellow .tool-name { color: var(--yellow); }
+  .tool-card.c-orange .tool-name { color: var(--orange); }
+  .tool-card.c-cyan .tool-name { color: var(--cyan); }
+  .tool-card.c-red .tool-name { color: var(--red); }
+
+  .tool-desc { font-size: 10px; color: var(--muted); line-height: 1.4; font-family: 'Space Mono', monospace; }
+
+  /* ── NAV BAR ── */
+  .nav-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    padding: 8px 0 16px;
+    z-index: 100;
+  }
+
+  .nav-item {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    gap: 4px; cursor: pointer; padding: 6px 4px;
+    color: var(--muted); transition: color 0.2s; font-size: 10px; font-weight: 600;
+  }
+
+  .nav-item.active { color: var(--green); }
+  .nav-item .nav-icon { font-size: 20px; }
+
+  /* ── SCREEN ── */
+  .screen { display: none; padding: 14px; }
+  .screen.active { display: block; }
+
+  /* ── SCREEN HEADER ── */
+  .screen-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 14px 10px;
+    border-bottom: 1px solid var(--border);
+    margin: -14px -14px 14px;
+    background: var(--surface);
+  }
+
+  .back-btn {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--surface2); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 16px; color: var(--muted); flex-shrink: 0;
+  }
+
+  .screen-title { font-size: 15px; font-weight: 800; }
+  .screen-subtitle { font-size: 10px; color: var(--muted); font-family: 'Space Mono', monospace; margin-top: 1px; }
+
+  /* ── CARDS ── */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+
+  .card-title { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+
+  .dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+  .dot-green { background: var(--green); }
+  .dot-blue { background: var(--blue); }
+  .dot-purple { background: var(--purple); }
+  .dot-yellow { background: var(--yellow); }
+  .dot-orange { background: var(--orange); }
+  .dot-cyan { background: var(--cyan); }
+
+  /* ── INPUTS ── */
+  .ig { margin-bottom: 12px; }
+  .ig label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 6px; font-family: 'Space Mono', monospace; }
+  .ig input, .ig select {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 11px 12px; color: var(--text); font-size: 16px;
+    font-family: 'Space Mono', monospace; -webkit-appearance: none; outline: none;
+    transition: border-color 0.2s;
+  }
+  .ig input:focus, .ig select:focus { border-color: var(--green); }
+
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+  /* ── RESULTS ── */
+  .rg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+
+  .rb { background: var(--surface2); border-radius: 10px; padding: 12px; border: 1px solid var(--border); }
+  .rb.g { border-color: var(--green); background: var(--green-dim); }
+  .rb.r { border-color: var(--red); background: var(--red-dim); }
+  .rb.y { border-color: var(--yellow); background: var(--yellow-dim); }
+  .rb.b { border-color: var(--blue); background: var(--blue-dim); }
+  .rb.p { border-color: var(--purple); background: var(--purple-dim); }
+  .rb.o { border-color: var(--orange); background: var(--orange-dim); }
+  .rb.c { border-color: var(--cyan); background: var(--cyan-dim); }
+
+  .rb .rl { font-size: 10px; color: var(--muted); font-family: 'Space Mono', monospace; margin-bottom: 4px; }
+  .rb .rv { font-size: 17px; font-weight: 700; font-family: 'Space Mono', monospace; }
+  .rb.g .rv { color: var(--green); }
+  .rb.r .rv { color: var(--red); }
+  .rb.y .rv { color: var(--yellow); }
+  .rb.b .rv { color: var(--blue); }
+  .rb.p .rv { color: var(--purple); }
+  .rb.o .rv { color: var(--orange); }
+  .rb.c .rv { color: var(--cyan); }
+
+  .rf { background: var(--surface2); border-radius: 10px; padding: 12px; margin-top: 8px; border: 1px solid var(--border); }
+  .rr { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .rr:last-child { border-bottom: none; }
+  .rr .rl { color: var(--muted); font-family: 'Space Mono', monospace; font-size: 11px; }
+  .rr .rv { font-weight: 600; font-family: 'Space Mono', monospace; font-size: 13px; }
+  .pos { color: var(--green); }
+  .neg { color: var(--red); }
+  .yel { color: var(--yellow); }
+  .muted { color: var(--muted); }
+
+  /* ── BUTTONS ── */
+  .btn { width: 100%; padding: 14px; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; border: none; font-family: 'Syne', sans-serif; transition: all 0.15s; margin-top: 6px; }
+  .btn:active { transform: scale(0.98); }
+  .btn-green { background: var(--green); color: #000; }
+  .btn-blue { background: var(--blue); color: #fff; }
+  .btn-purple { background: var(--purple); color: #fff; }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--muted); font-size: 12px; padding: 10px; }
+  .btn-sm { padding: 9px 14px; font-size: 12px; width: auto; margin: 0; }
+
+  /* ── MODE TOGGLE ── */
+  .mtog { display: flex; gap: 6px; margin-bottom: 14px; }
+  .mb { flex: 1; padding: 10px 6px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); font-family: 'Space Mono', monospace; text-align: center; transition: all 0.2s; }
+  .mb.on { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+
+  /* ── BADGE ── */
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; font-family: 'Space Mono', monospace; }
+  .badge-g { background: var(--green-dim); color: var(--green); border: 1px solid var(--green); }
+  .badge-r { background: var(--red-dim); color: var(--red); border: 1px solid var(--red); }
+  .badge-y { background: var(--yellow-dim); color: var(--yellow); border: 1px solid var(--yellow); }
+
+  /* ── INFO BOX ── */
+  .ibox { border-radius: 8px; padding: 10px 12px; font-size: 11px; font-family: 'Space Mono', monospace; line-height: 1.5; margin-top: 8px; }
+  .ibox-y { background: var(--yellow-dim); border: 1px solid var(--yellow); color: var(--yellow); }
+  .ibox-g { background: var(--green-dim); border: 1px solid var(--green); color: var(--green); }
+  .ibox-b { background: var(--blue-dim); border: 1px solid var(--blue); color: var(--blue); }
+
+  /* ── HIGHLIGHT ── */
+  .hbox { background: var(--green-dim); border: 1px solid var(--green); border-radius: 10px; padding: 16px; margin: 10px 0; }
+  .hbox .hl { font-size: 10px; color: var(--green); font-family: 'Space Mono', monospace; margin-bottom: 4px; opacity: 0.8; }
+  .hbox .hv { font-size: 26px; font-weight: 800; color: var(--green); font-family: 'Space Mono', monospace; }
+
+  /* ── DUTCH ROWS ── */
+  .dutch-row { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; display: flex; gap: 8px; align-items: center; }
+  .dutch-num { width: 24px; height: 24px; border-radius: 50%; background: var(--surface); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--muted); flex-shrink: 0; font-family: 'Space Mono', monospace; }
+  .dutch-input { flex: 1; background: transparent; border: none; color: var(--text); font-size: 15px; font-family: 'Space Mono', monospace; outline: none; padding: 0; }
+  .dutch-result { font-size: 13px; font-weight: 700; font-family: 'Space Mono', monospace; color: var(--green); min-width: 60px; text-align: right; }
+  .dutch-del { width: 24px; height: 24px; border-radius: 50%; background: var(--red-dim); border: 1px solid var(--red); display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--red); cursor: pointer; flex-shrink: 0; }
+
+  /* ── KELLY ── */
+  .kelly-meter { background: var(--surface2); border-radius: 10px; padding: 14px; margin-top: 10px; border: 1px solid var(--border); }
+  .kelly-bar-bg { background: var(--surface); border-radius: 6px; height: 10px; margin: 10px 0 6px; overflow: hidden; }
+  .kelly-bar { height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--green), var(--cyan)); transition: width 0.3s; }
+
+  /* ── STATS ── */
+  .sg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .sb { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 12px; text-align: center; }
+  .sl { font-size: 10px; color: var(--muted); font-family: 'Space Mono', monospace; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .sv { font-size: 20px; font-weight: 800; font-family: 'Space Mono', monospace; }
+
+  /* ── LOG ── */
+  .log-item { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 8px; }
+  .log-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+  .log-jogo { font-size: 13px; font-weight: 600; flex: 1; }
+  .log-pl { font-family: 'Space Mono', monospace; font-size: 14px; font-weight: 700; }
+  .log-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .log-tag { font-size: 10px; font-family: 'Space Mono', monospace; color: var(--muted); background: var(--surface2); padding: 3px 8px; border-radius: 6px; }
+  .log-actions { display: flex; gap: 6px; margin-top: 10px; }
+  .log-actions button { flex: 1; padding: 8px; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer; border: none; font-family: 'Space Mono', monospace; }
+  .bwin { background: var(--green-dim); color: var(--green); border: 1px solid var(--green) !important; }
+  .blose { background: var(--red-dim); color: var(--red); border: 1px solid var(--red) !important; }
+
+  /* ── CHART ── */
+  canvas { width: 100% !important; }
+  .chart-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+
+  /* ── EMPTY ── */
+  .empty { text-align: center; padding: 40px 20px; color: var(--muted); }
+  .empty .eicon { font-size: 40px; margin-bottom: 12px; }
+  .empty p { font-size: 13px; line-height: 1.6; }
+
+  /* ── MODAL ── */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 200; align-items: flex-end; }
+  .modal-overlay.active { display: flex; }
+  .modal { background: var(--surface); border-radius: 20px 20px 0 0; border-top: 1px solid var(--border); padding: 20px 16px 32px; width: 100%; max-height: 90vh; overflow-y: auto; }
+  .modal-title { font-size: 16px; font-weight: 800; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+  .modal-close { background: var(--surface2); border: none; color: var(--muted); width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+
+  .section-lbl { font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; font-family: 'Space Mono', monospace; margin: 14px 0 8px; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════ HOME ═══ -->
+<div id="screen-home" class="screen active">
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <div class="logo">⚡ FUTEBOL AUTOMÁTICO</div>
+        <div class="logo-sub">SISTEMA PROFISSIONAL DE TRADING</div>
+      </div>
+      <div class="header-badge">v2.0</div>
+    </div>
+  </div>
+
+  <div style="padding:14px 14px 6px;">
+    <div style="font-size:12px; color:var(--muted); font-family:'Space Mono',monospace; line-height:1.6; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px;">
+      🎯 Selecciona a ferramenta que precisas abaixo
+    </div>
+  </div>
+
+  <div class="home-grid">
+    <div class="tool-card c-green" onclick="goTo('calc')">
+      <div class="tool-icon">🔄</div>
+      <div class="tool-name">BACK + LAY</div>
+      <div class="tool-desc">Calcular stake e lucro em operações de trading com cobertura</div>
+    </div>
+    <div class="tool-card c-blue" onclick="goTo('arb')">
+      <div class="tool-icon">⚖️</div>
+      <div class="tool-name">ARBITRAGEM</div>
+      <div class="tool-desc">Detectar discrepâncias entre casas e garantir lucro sem risco</div>
+    </div>
+    <div class="tool-card c-purple" onclick="goTo('dutch')">
+      <div class="tool-icon">🎯</div>
+      <div class="tool-name">DUTCHING</div>
+      <div class="tool-desc">Apostar em múltiplos resultados com lucro igual em qualquer cenário</div>
+    </div>
+
+
+    <div class="tool-card c-cyan" onclick="goTo('odds')">
+      <div class="tool-icon">🔢</div>
+      <div class="tool-name">ODDS</div>
+      <div class="tool-desc">Converter entre decimal, fracionário e americano instantaneamente</div>
+    </div>
+    <div class="tool-card c-red" onclick="goTo('log')">
+      <div class="tool-icon">📋</div>
+      <div class="tool-name">REGISTO</div>
+      <div class="tool-desc">Guardar e acompanhar todas as tuas operações e resultados</div>
+    </div>
+    <div class="tool-card c-orange" onclick="goTo('casas')" style="--orange:#ff9800;">
+      <div class="tool-icon">🏦</div>
+      <div class="tool-name">CASAS</div>
+      <div class="tool-desc">Gerir saldos por casa, depósitos e total da banca em tempo real</div>
+    </div>
+    <div class="tool-card c-red" onclick="goTo('prog')" style="border-top-color:var(--red);">
+      <div class="tool-icon">📈</div>
+      <div class="tool-name">PROGRESSÃO</div>
+      <div class="tool-desc">Plano de 5 entradas com lucro decrescente e perda máxima controlada</div>
+    </div>
+    <div class="tool-card c-green" onclick="goTo('stats')" style="--green:#00e676;">
+      <div class="tool-icon">📊</div>
+      <div class="tool-name">STATS</div>
+      <div class="tool-desc">ROI, win rate, lucro total e evolução da banca ao longo do tempo</div>
+    </div>
+    <div class="tool-card c-green" onclick="goTo('futebol')" style="grid-column:span 2;border-top:2px solid var(--green);">
+      <div class="tool-icon">⚽</div>
+      <div class="tool-name" style="color:var(--green);">ESTATÍSTICAS DE FUTEBOL</div>
+      <div class="tool-desc">Pesquisa times por liga — forma recente, Over 2.5, BTTS, golos, cartões e análise automática</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ CALC ═══ -->
+<div id="screen-calc" class="screen">
+  <div class="screen-header">
+    <div class="back-btn" onclick="goHome()">←</div>
+    <div>
+      <div class="screen-title" style="color:var(--green)">🔄 BACK + LAY</div>
+      <div class="screen-subtitle">CALCULADORA DE TRADING COM COBERTURA</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="dot dot-green"></span> MODO DE CÁLCULO</div>
+    <div class="mtog">
+      <div class="mb on" id="ms" onclick="setMode('s')">STAKE → LUCRO</div>
+      <div class="mb" id="mp" onclick="setMode('p')">LUCRO → STAKE</div>
+    </div>
+    <div class="ig">
+      <label>TIPO DE OPERAÇÃO</label>
+      <select id="tipo-op" onchange="calc()">
+        <option value="trading">Trading (travar lucro)</option>
+        <option value="matched">Matched Betting (bónus)</option>
+        <option value="free">Aposta Grátis</option>
+      </select>
+    </div>
+    <div id="fs">
+      <div class="row2">
+        <div class="ig"><label>STAKE BACK (£)</label><input type="number" id="sb" value="10" oninput="calc()" inputmode="decimal"></div>
+        <div class="ig"><label>ODD BACK</label><input type="number" id="ob" value="3.00" step="0.01" oninput="calc()" inputmode="decimal"></div>
+      </div>
+      <div class="row2">
+        <div class="ig"><label>ODD LAY</label><input type="number" id="ol" value="2.00" step="0.01" oninput="calc()" inputmode="decimal"></div>
+        <div class="ig"><label>COMISSÃO (%)</label><input type="number" id="com" value="2" step="0.5" oninput="calc()" inputmode="decimal"></div>
+      </div>
+    </div>
+    <div id="fp" style="display:none">
+      <div class="row3">
+        <div class="ig"><label>ODD BACK</label><input type="number" id="pob" value="3.00" step="0.01" oninput="calcP()" inputmode="decimal"></div>
+        <div class="ig"><label>ODD LAY</label><input type="number" id="pol" value="2.00" step="0.01" oninput="calcP()" inputmode="decimal"></div>
+        <div class="ig"><label>COMISSÃO %</label><input type="number" id="pcom" value="2" step="0.5" oninput="calcP()" inputmode="decimal"></div>
+      </div>
+      <div class="ig"><label>LUCRO DESEJADO (£)</label><input type="number" id="plucro" value="10" oninput="calcP()" inputmode="decimal"></div>
+    </div>
+  </div>
+
+  <div id="res-s">
+    <div class="card">
+      <div class="card-title"><span class="dot dot-green"></span> RESULTADO</div>
+      <div class="rg">
+        <div class="rb p"><div class="rl">STAKE LAY</div><div class="rv" id="r-sl">—</div></div>
+        <div class="rb y"><div class="rl">LIABILITY</div><div class="rv" id="r-lb">—</div></div>
+      </div>
+      <div class="rf">
+        <div class="rr"><span class="rl">SE BACK VENCER</span><span class="rv" id="r-bw">—</span></div>
+        <div class="rr"><span class="rl">SE LAY VENCER</span><span class="rv" id="r-lw">—</span></div>
+        <div class="rr"><span class="rl">QUALIDADE</span><span id="r-q">—</span></div>
+      </div>
+      <div class="ibox ibox-y" id="r-dica">💡 Preenche os campos acima.</div>
+    </div>
+    <button class="btn btn-green" onclick="openModal()">+ REGISTRAR OPERAÇÃO</button>
+  </div>
+
+  <div id="res-p" style="display:none">
+    <div class="card">
+      <div class="card-title"><span class="dot dot-green"></span> STAKES CALCULADOS</div>
+      <div class="hbox"><div class="hl">LUCRO GARANTIDO EM AMBOS OS CENÁRIOS</div><div class="hv" id="p-ld">£10.00</div></div>
+      <div class="rf">
+        <div class="rr"><span class="rl">STAKE BACK</span><span class="rv pos" id="p-sb">—</span></div>
+        <div class="rr"><span class="rl">STAKE LAY</span><span class="rv pos" id="p-sl">—</span></div>
+        <div class="rr"><span class="rl">LIABILITY</span><span class="rv yel" id="p-lb">—</span></div>
+        <div class="rr"><span class="rl">TOTAL INVESTIDO</span><span class="rv muted" id="p-ti">—</span></div>
+        <div class="rr"><span class="rl">SE BACK VENCER</span><span class="rv pos" id="p-bw">—</span></div>
+        <div class="rr"><span class="rl">SE LAY VENCER</span><span class="rv pos" id="p-lw">—</span></div>
+      </div>
+      <div class="ibox ibox-g" id="p-dica">💡 Define o lucro e as odds.</div>
+    </div>
+    <button class="btn btn-green" onclick="openModal()">+ REGISTRAR OPERAÇÃO</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ ARB ═══ -->
+<div id="screen-arb" class="screen">
+  <div class="screen-header">
+    <div class="back-btn" onclick="goHome()">←</div>
+    <div>
+      <div class="screen-title" style="color:var(--blue)">⚖️ ARBITRAGEM</div>
+      <div class="screen-subtitle">DETECTOR DE OPORTUNIDADES SEM RISCO</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="dot dot-blue"></span> ODDS POR CASA</div>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:12px;font-family:'Space Mono',monospace;line-height:1.5;">Se Σ(1/odd) &lt; 1 → arbitragem detectada ✅</p>
+    <div id="arb-rows">
+      <div class="dutch-row arb-r"><div class="dutch-num">1</div><input class="dutch-input arb-m" placeholder="Casa / Mercado" style="font-size:13px;"><input type="number" class="dutch-input arb-o" value="2.10" step="0.01" oninput="calcArb()" inputmode="decimal" style="width:80px;text-align:right;"></div>
+      <div class="dutch-row arb-r"><div class="dutch-num">2</div><input class="dutch-input arb-m" placeholder="Casa / Mercado" style="font-size:13px;"><input type="number" class="dutch-input arb-o" value="2.20" step="0.01" oninput="calcArb()" inputmode="decimal" style="width:80px;text-align:right;"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn btn-outline" onclick="addArbR()" style="flex:1">+ CASA</button>
+      <button class="btn btn-outline" onclick="remArbR()" style="flex:1">− CASA</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="dot dot-blue"></span> ANÁLISE</div>
+    <div class="ig"><label>BANCA TOTAL (£)</label><input type="number" id="arb-banca" value="200" oninput="calcArb()" inputmode="decimal"></div>
+    <div class="rg">
+      <div class="rb" id="arb-sb"><div class="rl">Σ (1/ODDS)</div><div class="rv" id="arb-s">—</div></div>
+      <div class="rb" id="arb-lb"><div class="rl">LUCRO (£)</div><div class="rv" id="arb-l">—</div></div>
+    </div>
+    <div id="arb-stk" style="margin-top:8px;"></div>
+    <div style="margin-top:10px;text-align:center;" id="arb-badge"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ DUTCH ═══ -->
+<div id="screen-dutch" class="screen">
+  <div class="screen-header">
+    <div class="back-btn" onclick="goHome()">←</div>
+    <div>
+      <div class="screen-title" style="color:var(--purple)">🎯 DUTCHING</div>
+      <div class="screen-subtitle">ATÉ 20 SELECÇÕES — LUCRO IGUAL EM TODAS</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="dot dot-purple"></span> CONFIGURAÇÃO</div>
+    <div class="row2">
+      <div class="ig"><label>BANCA TOTAL (£)</label><input type="number" id="d-banca" value="100" oninput="calcDutch()" inputmode="decimal"></div>
+      <div class="ig"><label>MARGEM (%)</label><input type="number" id="d-margin" value="0" step="0.5" oninput="calcDutch()" inputmode="decimal" placeholder="0 = sem margem"></div>
+    </div>
+    <div class="card-title" style="margin-top:4px;"><span class="dot dot-purple"></span> SELECÇÕES (ODDS)</div>
+    <div id="dutch-rows"></div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn btn-outline" onclick="addDRow()" style="flex:1">+ SELECÇÃO</button>
+      <button class="btn btn-outline" onclick="remDRow()" style="flex:1">− SELECÇÃO</button>
+    </div>
+  </div>
+
+  <div class="card" id="dutch-result" style="display:none">
+    <div class="card-title"><span class="dot dot-purple"></span> DISTRIBUIÇÃO DE STAKES</div>
+    <div class="rg" style="margin-top:0;margin-bottom:10px;">
+      <div class="rb p"><div class="rl">SOMA IMPLICADA</div><div class="rv" id="d-soma">—</div></div>
+      <div class="rb g"><div class="rl">LUCRO GARANTIDO</div><div class="rv" id="d-lucro">—</div></div>
+    </div>
+    <div id="dutch-stakes"></div>
+    <div class="ibox ibox-b" id="d-info" style="margin-top:10px;"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ ODDS ═══ -->
+<div id="screen-odds" class="screen">
+  <div class="screen-header">
+    <div class="back-btn" onclick="goHome()">←</div>
+    <div>
+      <div class="screen-title" style="color:var(--cyan)">🔢 CONVERSOR DE ODDS</div>
+      <div class="screen-subtitle">DECIMAL · FRACIONÁRIO · AMERICANO</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="dot dot-cyan"></span> INSERE QUALQUER FORMATO</div>
+    <div class="ig">
+      <label>ODDS DECIMAL (ex: 2.50)</label>
+      <input type="number" id="oc-dec" value="2.50" step="0.01" oninput="convOdds('dec')" inputmode="decimal">
+    </div>
+    <div class="ig">
+      <label>ODDS FRACIONÁRIA (ex: 6/4)</label>
+      <input type="text" id="oc-frac" value="6/4" oninput="convOdds('frac')" placeholder="Ex: 6/4 ou 5/2">
+    </div>
+    <div class="ig">
+      <label>ODDS AMERICANA (ex: +150 ou -200)</label>
+      <input type="text" id="oc-amer" value="+150" oninput="convOdds('amer')" placeholder="Ex: +150 ou -200">
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="dot dot-cyan"></span> ANÁLISE</div>
+    <div class="rf">
+      <div class="rr"><span class="rl">PROBABILIDADE IMPLÍCITA</span><span class="rv" id="oc-prob" style="color:var(--cyan)">—</span></div>
+      <div class="rr"><span class="rl">RETORNO POR £1 APOSTADO</span><span class="rv pos" id="oc-ret">—</span></div>
+      <div class="rr"><span class="rl">CLASSIFICAÇÃO</span><span id="oc-class">—</span></div>
+    </div>
+    <div class="ibox ibox-b" id="oc-info" style="margin-top:10px;"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="dot dot-cyan"></span> CALCULADORA DE VALUE BET</div>
+    <div class="ibox ibox-b" style="margin-bottom:12px;">📖 Um value bet existe quando a probabilidade real é maior que a probabilidade implícita na odd.</div>
+    <div class="row2">
+      <div class="ig"><label>ODD OFERECIDA</label><input type="number" id="vb-odd" value="2.50" step="0.01" oninput="calcVB()" inputmode="decimal"></div>
+      <div class="ig"><label>PROB. REAL (%)</label><input type="number" id="vb-prob" value="45" oninput="calcVB()" inputmode="decimal"></div>
+    </div>
+    <div class="rf">
+      <div class="rr"><span class="rl">EDGE (%)</span><span class="rv" id="vb-edge">—</span></div>
+      <div class="rr"><span class="rl">RESULTADO</span><span id="vb-result">—</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ LOG ═══ -->
+<div id="screen-log" class="screen">
+  <div class="screen-header">
+    <div class="back-btn" onclick="goHome()">←</div>
+    <div>
+      <div class="screen-title" style="color:var(--red)">📋 REGISTO</div>
+      <div class="screen-subtitle">HISTÓRICO DE OPERAÇÕES</div>
+    </div>
+  </div>
+  <button class="btn btn-green" onclick="openModal()" style="margin-bottom:12px;">+ NOVA OPERAÇÃO</button>
+  <div id="lista-apostas">
+    <div class="empty"><div class="eicon">📋</div><p>Nenhuma operação registada ainda.</p></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ STATS ═══ -->
+<div id="screen-stats" class="screen">
+  <div class="screen-header">
+    <div class="back-btn" onclick="goHome()">←</div>
+    <div>
+      <div class="screen-title" style="color:var(--green)">📊 ESTATÍSTICAS</div>
+      <div class="screen-subtitle">PERFORMANCE E EVOLUÇÃO DA BANCA</div>
+    </div>
+  </div>
+  <div class="sg">
+    <div class="sb"><div class="sl">TOTAL</div><div class="sv neutral" id="s-tot">0</div></div>
+    <div class="sb"><div class="sl">ROI</div><div class="sv" id="s-roi">—</div></div>
+    <div class="sb"><div class="sl">LUCRO</div><div class="sv" id="s-luc">£0</div></div>
+    <div class="sb"><div class="sl">WIN RATE</div><div class="sv" id="s-wr">—</div></div>
+  </div>
+  <div class="chart-wrap">
+    <div class="card-title" style="margin-bottom:12px;"><span class="dot dot-green"></span> EVOLUÇÃO DA BANCA</div>
+    <canvas id="chart" height="160"></canvas>
+    <div class="empty" id="chart-empty" style="padding:20px 0;"><p style="font-size:11px;">Regista operações para ver a evolução</p></div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="dot dot-green"></span> BANCA INICIAL</div>
+    <div class="row2">
+      <div class="ig"><label>VALOR (£)</label><input type="number" id="banca-ini" value="500" inputmode="decimal"></div>
+      <div style="display:flex;align-items:flex-end;padding-bottom:12px;">
+        <button class="btn btn-green btn-sm" onclick="updateStats()">ACTUALIZAR</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ NAV ═══ -->
+<div class="nav-bar">
+  <div class="nav-item active" id="nav-home" onclick="goHome()"><div class="nav-icon">🏠</div><span>HOME</span></div>
+  <div class="nav-item" id="nav-calc" onclick="goTo('calc')"><div class="nav-icon">🔄</div><span>CALC</span></div>
+  <div class="nav-item" id="nav-dutch" onclick="goTo('dutch')"><div class="nav-icon">🎯</div><span>DUTCH</span></div>
+  <div class="nav-item" id="nav-log" onclick="goTo('log')"><div class="nav-icon">📋</div><span>LOG</span></div>
+  <div class="nav-item" id="nav-stats" onclick="goTo('stats')"><div class="nav-icon">📊</div><span>STATS</span></div>
+  <div class="nav-item" id="nav-casas" onclick="goTo('casas')"><div class="nav-icon">🏦</div><span>CASAS</span></div>
+</div>
+
+
+<!-- ═══════════════════════════════════════ CASAS ═══ -->
+<div id="screen-casas" class="screen">
+  <div class="screen-header">
+    <div class="back-btn" onclick="goHome()">←</div>
+    <div>
+      <div class="screen-title" style="color:#ff9800">🏦 CASAS DE APOSTAS</div>
+      <div class="screen-subtitle">GESTÃO DE SALDOS POR CASA</div>
+    </div>
+  </div>
+
+  <!-- TOTAL -->
+  <div class="hbox" style="background:#ff980018;border-color:#ff9800;margin-bottom:12px;">
+    <div class="hl" style="color:#ff9800;">BANCA TOTAL (TODAS AS CASAS)</div>
+    <div class="hv" style="color:#ff9800;" id="casas-total">£0.00</div>
+  </div>
+
+  <!-- LISTA CASAS -->
+  <div id="casas-lista">
+    <div class="empty"><div class="eicon">🏦</div><p>Nenhuma casa adicionada ainda.<br>Clica em + ADICIONAR CASA</p></div>
+  </div>
+
+  <button class="btn" style="background:#ff9800;color:#000;margin-bottom:8px;" onclick="openModalCasa()">+ ADICIONAR CASA</button>
+  <button class="btn btn-outline" onclick="openModalDeposito()">💰 REGISTAR DEPÓSITO / LEVANTAMENTO</button>
+</div>
+
+
+<!-- ═══════════════════════════════════════ PROGRESSÃO ═══ -->
+<div id="screen-prog" class="screen">
+  <div class="screen-header">
+    <div class="back-btn" onclick="goHome()">←</div>
+    <div>
+      <div class="screen-title" style="color:var(--red)">📈 PROGRESSÃO</div>
+      <div class="screen-subtitle">SIMULADOR DE ENTRADAS PROGRESSIVAS</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:var(--red)"></span> PARÂMETROS</div>
+    <div class="ibox ibox-b" style="margin-bottom:12px;">
+      💡 Define os valores e vê o resultado de cada entrada. A cada perda o stake sobe para recuperar + lucro alvo.
+    </div>
+    <div class="row2">
+      <div class="ig"><label>STAKE INICIAL (£)</label><input type="number" id="pg-stake" value="10" step="0.01" oninput="calcProg()" inputmode="decimal"></div>
+      <div class="ig"><label>ODD ALVO</label><input type="number" id="pg-odd" value="2.00" step="0.01" oninput="calcProg()" inputmode="decimal"></div>
+    </div>
+    <div class="row2">
+      <div class="ig"><label>LUCRO ALVO (%)</label><input type="number" id="pg-pct" value="10" step="1" oninput="calcProg()" inputmode="decimal"></div>
+      <div class="ig"><label>Nº ENTRADAS</label><input type="number" id="pg-n" value="5" min="2" max="20" oninput="calcProg()" inputmode="decimal"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:var(--red)"></span> SIMULAÇÃO</div>
+    <div id="prog-rows"></div>
+    <div class="rf" style="margin-top:10px;">
+      <div class="rr"><span class="rl">LUCRO SE GANHAR ENTRADA 1</span><span class="rv pos" id="pg-lucro1">—</span></div>
+      <div class="rr"><span class="rl">PERDA TOTAL SE PERDER TUDO</span><span class="rv neg" id="pg-perda-total">—</span></div>
+      <div class="rr"><span class="rl">RÁCIO RISCO/RECOMPENSA</span><span class="rv" id="pg-racio" style="color:var(--cyan)">—</span></div>
+    </div>
+    <div class="ibox" id="pg-info" style="margin-top:10px;"></div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════ FUTEBOL ═══ -->
+<div id="screen-futebol" class="screen">
+  <div class="screen-header">
+    <div class="back-btn" onclick="goHome()">←</div>
+    <div>
+      <div class="screen-title" style="color:var(--green)">⚽ ESTATÍSTICAS</div>
+      <div class="screen-subtitle">ANÁLISE DE TIMES PARA DECISÕES INFORMADAS</div>
+    </div>
+  </div>
+
+  <!-- PESQUISA -->
+  <div class="card">
+    <div class="card-title"><span class="dot dot-green"></span> PESQUISAR TIME</div>
+    <div class="ig">
+      <label>LIGA</label>
+      <select id="ft-liga" onchange="carregarTimes()">
+        <option value="39">Premier League (Inglaterra)</option>
+        <option value="140">La Liga (Espanha)</option>
+        <option value="78">Bundesliga (Alemanha)</option>
+        <option value="135">Serie A (Itália)</option>
+        <option value="61">Ligue 1 (França)</option>
+        <option value="2">UEFA Champions League</option>
+        <option value="71">Brasileirão</option>
+      </select>
+    </div>
+    <div class="ig">
+      <label>ÉPOCA</label>
+      <select id="ft-epoca">
+        <option value="2024">2024/25</option>
+        <option value="2023">2023/24</option>
+      </select>
+    </div>
+    <button class="btn btn-green" onclick="carregarTimes()">🔍 CARREGAR TIMES</button>
+  </div>
+
+  <!-- TIMES -->
+  <div class="card" id="ft-times-card" style="display:none">
+    <div class="card-title"><span class="dot dot-green"></span> SELECCIONAR TIME</div>
+    <div class="ig">
+      <label>TIME</label>
+      <select id="ft-time-select">
+        <option value="">-- Seleccionar --</option>
+      </select>
+    </div>
+    <button class="btn btn-green" onclick="carregarEstatisticas()">📊 VER ESTATÍSTICAS</button>
+  </div>
+
+  <!-- LOADING -->
+  <div id="ft-loading" style="display:none;text-align:center;padding:30px;">
+    <div style="font-size:30px;margin-bottom:12px;">⏳</div>
+    <div style="color:var(--muted);font-family:'Space Mono',monospace;font-size:12px;">A carregar dados...</div>
+  </div>
+
+  <!-- RESULTADOS -->
+  <div id="ft-resultado" style="display:none;">
+
+    <!-- HEADER TIME -->
+    <div class="card" id="ft-header-card">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <img id="ft-logo" src="" style="width:50px;height:50px;object-fit:contain;" onerror="this.style.display='none'">
+        <div>
+          <div id="ft-nome" style="font-size:18px;font-weight:800;color:var(--green);"></div>
+          <div id="ft-liga-nome" style="font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;"></div>
+        </div>
+        <div style="margin-left:auto;text-align:right;">
+          <div id="ft-posicao" style="font-size:24px;font-weight:800;color:var(--cyan);font-family:'Space Mono',monospace;"></div>
+          <div style="font-size:10px;color:var(--muted);font-family:'Space Mono',monospace;">POSIÇÃO</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FORMA RECENTE -->
+    <div class="card">
+      <div class="card-title"><span class="dot dot-green"></span> FORMA RECENTE</div>
+      <div id="ft-forma" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>
+      <div id="ft-ultimos" style="font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;"></div>
+    </div>
+
+    <!-- STATS GERAIS -->
+    <div class="card">
+      <div class="card-title"><span class="dot dot-cyan"></span> ESTATÍSTICAS GERAIS</div>
+      <div class="rg">
+        <div class="rb b"><div class="rl">JOGOS</div><div class="rv" id="ft-jogos">—</div></div>
+        <div class="rb g"><div class="rl">VITÓRIAS</div><div class="rv" id="ft-vitorias">—</div></div>
+        <div class="rb y"><div class="rl">EMPATES</div><div class="rv" id="ft-empates">—</div></div>
+        <div class="rb r"><div class="rl">DERROTAS</div><div class="rv" id="ft-derrotas">—</div></div>
+      </div>
+      <div class="rf" style="margin-top:10px;">
+        <div class="rr"><span class="rl">GOLOS MARCADOS</span><span class="rv pos" id="ft-gm">—</span></div>
+        <div class="rr"><span class="rl">GOLOS SOFRIDOS</span><span class="rv neg" id="ft-gs">—</span></div>
+        <div class="rr"><span class="rl">MÉDIA GOLOS/JOGO (MARCADOS)</span><span class="rv" id="ft-mg" style="color:var(--cyan)">—</span></div>
+        <div class="rr"><span class="rl">MÉDIA GOLOS/JOGO (SOFRIDOS)</span><span class="rv" id="ft-mgs" style="color:var(--yellow)">—</span></div>
+      </div>
+    </div>
+
+    <!-- MERCADOS -->
+    <div class="card">
+      <div class="card-title"><span class="dot dot-purple"></span> ANÁLISE DE MERCADOS</div>
+      <div class="rg">
+        <div class="rb p">
+          <div class="rl">OVER 2.5</div>
+          <div class="rv" id="ft-over25">—</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:2px;font-family:'Space Mono',monospace;" id="ft-over25-j">—</div>
+        </div>
+        <div class="rb g">
+          <div class="rl">AMBAS MARCAM</div>
+          <div class="rv" id="ft-btts">—</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:2px;font-family:'Space Mono',monospace;" id="ft-btts-j">—</div>
+        </div>
+        <div class="rb c">
+          <div class="rl">OVER 1.5</div>
+          <div class="rv" id="ft-over15">—</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:2px;font-family:'Space Mono',monospace;" id="ft-over15-j">—</div>
+        </div>
+        <div class="rb y">
+          <div class="rl">CLEAN SHEET</div>
+          <div class="rv" id="ft-cs">—</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:2px;font-family:'Space Mono',monospace;" id="ft-cs-j">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CASA VS FORA -->
+    <div class="card">
+      <div class="card-title"><span class="dot dot-orange"></span> CASA vs FORA</div>
+      <div class="rf">
+        <div class="rr"><span class="rl">VITÓRIAS EM CASA</span><span class="rv pos" id="ft-hv">—</span></div>
+        <div class="rr"><span class="rl">GOLOS EM CASA</span><span class="rv pos" id="ft-hg">—</span></div>
+        <div class="rr"><span class="rl">VITÓRIAS FORA</span><span class="rv" id="ft-av" style="color:var(--cyan)">—</span></div>
+        <div class="rr"><span class="rl">GOLOS FORA</span><span class="rv" id="ft-ag" style="color:var(--cyan)">—</span></div>
+      </div>
+    </div>
+
+    <!-- CARTÕES E CANTOS -->
+    <div class="card">
+      <div class="card-title"><span class="dot dot-yellow"></span> CARTÕES E CANTOS</div>
+      <div class="rf">
+        <div class="rr"><span class="rl">MÉDIA CANTOS/JOGO</span><span class="rv yel" id="ft-cantos">—</span></div>
+        <div class="rr"><span class="rl">MÉDIA AMARELOS/JOGO</span><span class="rv yel" id="ft-amarelos">—</span></div>
+        <div class="rr"><span class="rl">MÉDIA VERMELHOS/JOGO</span><span class="rv neg" id="ft-vermelhos">—</span></div>
+      </div>
+    </div>
+
+    <!-- ANÁLISE PARA APOSTAS -->
+    <div class="card" id="ft-analise-card">
+      <div class="card-title"><span class="dot dot-green"></span> ANÁLISE PARA APOSTAS</div>
+      <div id="ft-analise-content"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL CASA -->
+<div class="modal-overlay" id="modal-casa" onclick="closeModalCasaOut(event)">
+  <div class="modal">
+    <div class="modal-title">ADICIONAR CASA <button class="modal-close" onclick="closeModalCasa()">✕</button></div>
+    <div class="ig"><label>NOME DA CASA</label><input type="text" id="mc-nome" placeholder="Ex: Bet365, Smarkets..."></div>
+    <div class="ig"><label>TIPO</label>
+      <select id="mc-tipo">
+        <option value="back">Casa Normal (Back)</option>
+        <option value="exchange">Exchange (Back + Lay)</option>
+      </select>
+    </div>
+    <div class="ig"><label>SALDO INICIAL (£)</label><input type="number" id="mc-saldo" value="0" inputmode="decimal"></div>
+    <div class="ig"><label>COMISSÃO PADRÃO (%)</label><input type="number" id="mc-com" value="0" step="0.5" inputmode="decimal" placeholder="0 para casas normais"></div>
+    <button class="btn btn-green" onclick="saveCasa()">GUARDAR</button>
+  </div>
+</div>
+
+<!-- MODAL DEPOSITO -->
+<div class="modal-overlay" id="modal-dep" onclick="closeModalDepOut(event)">
+  <div class="modal">
+    <div class="modal-title">DEPÓSITO / LEVANTAMENTO <button class="modal-close" onclick="closeModalDep()">✕</button></div>
+    <div class="ig"><label>CASA</label><select id="md-casa"></select></div>
+    <div class="ig"><label>TIPO</label>
+      <select id="md-tipo">
+        <option value="dep">💰 Depósito</option>
+        <option value="lev">💸 Levantamento</option>
+        <option value="bonus">🎁 Bónus</option>
+      </select>
+    </div>
+    <div class="ig"><label>VALOR (£)</label><input type="number" id="md-valor" inputmode="decimal" placeholder="Ex: 100"></div>
+    <div class="ig"><label>NOTA (opcional)</label><input type="text" id="md-nota" placeholder="Ex: Depósito inicial"></div>
+    <button class="btn btn-green" onclick="saveDeposito()">CONFIRMAR</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ MODAL ═══ -->
+<div class="modal-overlay" id="modal" onclick="closeModalOut(event)">
+  <div class="modal">
+    <div class="modal-title">REGISTRAR OPERAÇÃO <button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="ig"><label>JOGO / EVENTO</label><input type="text" id="m-jogo" placeholder="Ex: Liverpool vs PSG"></div>
+    <div class="ig"><label>CASA BACK</label><select id="m-casa-back"><option value="">-- Seleccionar --</option></select></div>
+    <div class="ig" id="m-casa-lay-row"><label>CASA LAY (se aplicável)</label><select id="m-casa-lay"><option value="">-- Nenhuma / Mesma casa --</option></select></div>
+    <div class="row2">
+      <div class="ig"><label>FERRAMENTA</label>
+        <select id="m-tipo">
+          <option>Back+Lay Trading</option>
+          <option>Matched Betting</option>
+          <option>Aposta Grátis</option>
+          <option>Arbitragem</option>
+          <option>Dutching</option>
+          <option>Value Bet</option>
+          <option>Outro</option>
+        </select>
+      </div>
+      <div class="ig"><label>MERCADO</label>
+        <select id="m-mercado">
+          <option>Resultado 1X2</option>
+          <option>Over/Under Golos</option>
+          <option>Escanteios</option>
+          <option>Ambas Marcam</option>
+          <option>Handicap</option>
+          <option>Outro</option>
+        </select>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="ig"><label>STAKE (£)</label><input type="number" id="m-stake" inputmode="decimal"></div>
+      <div class="ig"><label>ODD</label><input type="number" id="m-odd" step="0.01" inputmode="decimal"></div>
+    </div>
+    <div class="ig"><label>LUCRO ESPERADO (£)</label><input type="number" id="m-lexp" inputmode="decimal"></div>
+    <div class="ig"><label>STATUS</label>
+      <select id="m-status">
+        <option value="pending">⏳ Pendente</option>
+        <option value="win">✅ Green</option>
+        <option value="lose">❌ Red</option>
+      </select>
+    </div>
+    <button class="btn btn-green" onclick="saveAposta()">GUARDAR</button>
+  </div>
+</div>
+
+<script>
+// ── STATE ──
+let apostas = JSON.parse(localStorage.getItem('tp_apostas') || '[]');
+
+// ── NAVIGATION ──
+function goHome() {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-home').classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('nav-home').classList.add('active');
+}
+
+function goTo(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const ni = document.getElementById('nav-'+id);
+  if(ni) ni.classList.add('active');
+  if(id === 'stats') updateStats();
+  if(id === 'log') renderLog();
+  if(id === 'dutch') initDutch();
+}
+
+// ── CALC BACK+LAY ──
+let cmode = 's';
+
+function setMode(m) {
+  cmode = m;
+  document.getElementById('ms').classList.toggle('on', m==='s');
+  document.getElementById('mp').classList.toggle('on', m==='p');
+  document.getElementById('fs').style.display = m==='s' ? 'block' : 'none';
+  document.getElementById('fp').style.display = m==='p' ? 'block' : 'none';
+  document.getElementById('res-s').style.display = m==='s' ? 'block' : 'none';
+  document.getElementById('res-p').style.display = m==='p' ? 'block' : 'none';
+  if(m==='p') calcP(); else calc();
+}
+
+function calc() {
+  const tipo = document.getElementById('tipo-op').value;
+  const sB = parseFloat(document.getElementById('sb').value)||0;
+  const oB = parseFloat(document.getElementById('ob').value)||0;
+  const oL = parseFloat(document.getElementById('ol').value)||0;
+  const com = (parseFloat(document.getElementById('com').value)||2)/100;
+  if(!sB||!oB||!oL) return;
+  const cf = 1-com;
+  let sL, bW, lW, dica;
+  if(tipo==='free') {
+    sL = (sB*(oB-1))/(oL-com*(oL-1)-1+com);
+    bW = sB*(oB-1)-sL*(oL-1)*(cf);
+    lW = -sB+sL*cf;
+    dica = '🎁 Aposta Grátis: stake não retorna no back.';
+  } else {
+    sL = (sB*oB)/(oL-com*(oL-1));
+    bW = sB*(oB-1)-sL*(oL-1);
+    lW = sL*cf-sB;
+    dica = tipo==='matched'
+      ? `💡 Perda qualificadora: ${f(Math.abs(Math.min(bW,lW)))} para libertar bónus.`
+      : Math.abs(bW-lW)<0.5 ? `✅ Excelente cobertura!` : `⚠️ Diferença de ${f(Math.abs(bW-lW))} entre cenários.`;
+  }
+  const lb = sL*(oL-1);
+  document.getElementById('r-sl').textContent = f(sL);
+  document.getElementById('r-lb').textContent = f(lb);
+  set('r-bw', bW); set('r-lw', lW);
+  const mp = Math.min(bW,lW);
+  document.getElementById('r-q').innerHTML = mp>0 ? '<span class="badge badge-g">🟢 LUCRO GARANTIDO</span>' : mp>-2 ? '<span class="badge badge-y">🟡 COBERTURA BOA</span>' : '<span class="badge badge-r">🔴 REVISAR ODDS</span>';
+  document.getElementById('r-dica').textContent = dica;
+  document.getElementById('m-stake').value = sB;
+  document.getElementById('m-odd').value = oB;
+  document.getElementById('m-lexp').value = mp.toFixed(2);
+}
+
+function calcP() {
+  const oB = parseFloat(document.getElementById('pob').value)||0;
+  const oL = parseFloat(document.getElementById('pol').value)||0;
+  const com = (parseFloat(document.getElementById('pcom').value)||2)/100;
+  const L = parseFloat(document.getElementById('plucro').value)||0;
+  if(!oB||!oL||!L) return;
+  const cf = 1-com;
+  const sL = (L*oB)/(cf*(oB-1)-(oL-1));
+  const sB = sL*cf-L;
+  if(sB<=0||sL<=0) { document.getElementById('p-dica').textContent='❌ Impossível. O Lay precisa ser menor que o Back.'; return; }
+  const bW = sB*(oB-1)-sL*(oL-1);
+  const lW = sL*cf-sB;
+  const lb = sL*(oL-1);
+  const ti = sB+lb;
+  const roi = (L/ti*100).toFixed(1);
+  document.getElementById('p-ld').textContent = f(L);
+  document.getElementById('p-sb').textContent = f(sB);
+  document.getElementById('p-sl').textContent = f(sL);
+  document.getElementById('p-lb').textContent = f(lb);
+  document.getElementById('p-ti').textContent = f(ti);
+  document.getElementById('p-bw').textContent = fs(bW);
+  document.getElementById('p-lw').textContent = fs(lW);
+  document.getElementById('p-dica').textContent = `✅ ROI: ${roi}% | Total investido: ${f(ti)}`;
+  document.getElementById('m-stake').value = sB.toFixed(2);
+  document.getElementById('m-odd').value = oB;
+  document.getElementById('m-lexp').value = L.toFixed(2);
+}
+
+// ── ARB ──
+function addArbR() {
+  const c = document.getElementById('arb-rows');
+  const n = c.querySelectorAll('.arb-r').length+1;
+  if(n>10) return;
+  const d = document.createElement('div');
+  d.className = 'dutch-row arb-r';
+  d.innerHTML = `<div class="dutch-num">${n}</div><input class="dutch-input arb-m" placeholder="Casa / Mercado" style="font-size:13px;"><input type="number" class="dutch-input arb-o" value="3.50" step="0.01" oninput="calcArb()" inputmode="decimal" style="width:80px;text-align:right;">`;
+  c.appendChild(d); calcArb();
+}
+
+function remArbR() {
+  const c = document.getElementById('arb-rows');
+  const rows = c.querySelectorAll('.arb-r');
+  if(rows.length>2) rows[rows.length-1].remove();
+  calcArb();
+}
+
+function calcArb() {
+  const odds = Array.from(document.querySelectorAll('.arb-o')).map(i=>parseFloat(i.value)||0);
+  const banca = parseFloat(document.getElementById('arb-banca').value)||200;
+  const soma = odds.reduce((s,o)=>s+(o>0?1/o:0),0);
+  const isArb = soma<1&&soma>0;
+  const lucroP = isArb?(1/soma-1)*100:null;
+  const lucroR = isArb?banca*(1/soma-1):null;
+  document.getElementById('arb-s').textContent = soma.toFixed(4);
+  document.getElementById('arb-sb').className = 'rb '+(isArb?'g':soma<1.05?'y':'r');
+  document.getElementById('arb-s').style.color = isArb?'var(--green)':soma<1.05?'var(--yellow)':'var(--red)';
+  if(isArb) { document.getElementById('arb-l').textContent='£'+lucroR.toFixed(2); document.getElementById('arb-lb').className='rb g'; }
+  else { document.getElementById('arb-l').textContent='—'; document.getElementById('arb-lb').className='rb r'; }
+  const stk = document.getElementById('arb-stk');
+  if(isArb&&odds.every(o=>o>0)) {
+    stk.innerHTML = odds.map((o,i)=>`<div class="rr"><span class="rl">CASA ${i+1} STAKE</span><span class="rv pos">£${(banca/(soma*o)).toFixed(2)}</span></div>`).join('');
+  } else stk.innerHTML='';
+  const b = document.getElementById('arb-badge');
+  if(isArb) b.innerHTML=`<span class="badge badge-g">✅ ARB +${lucroP.toFixed(2)}%</span>`;
+  else if(soma<1.03) b.innerHTML=`<span class="badge badge-y">🟡 QUASE ARB</span>`;
+  else b.innerHTML=`<span class="badge badge-r">❌ SEM ARB</span>`;
+}
+
+// ── DUTCH ──
+let dutchCount = 0;
+
+function initDutch() {
+  if(dutchCount>0) return;
+  const c = document.getElementById('dutch-rows');
+  c.innerHTML = '';
+  dutchCount = 0;
+  for(let i=0;i<5;i++) addDRow();
+}
+
+function addDRow() {
+  if(dutchCount>=20) return;
+  dutchCount++;
+  const c = document.getElementById('dutch-rows');
+  const d = document.createElement('div');
+  d.className = 'dutch-row dutch-r';
+  d.dataset.idx = dutchCount;
+  d.innerHTML = `<div class="dutch-num">${dutchCount}</div><input class="dutch-input dutch-o" type="number" value="${(1.5+dutchCount*0.3).toFixed(2)}" step="0.01" oninput="calcDutch()" inputmode="decimal" placeholder="Odd"><div class="dutch-result" id="dr-${dutchCount}">—</div>`;
+  c.appendChild(d); calcDutch();
+}
+
+function remDRow() {
+  const c = document.getElementById('dutch-rows');
+  const rows = c.querySelectorAll('.dutch-r');
+  if(rows.length>2) { rows[rows.length-1].remove(); dutchCount--; calcDutch(); }
+}
+
+function calcDutch() {
+  const banca = parseFloat(document.getElementById('d-banca').value)||100;
+  const margin = (parseFloat(document.getElementById('d-margin').value)||0)/100;
+  const odds = Array.from(document.querySelectorAll('.dutch-o')).map(i=>parseFloat(i.value)||0).filter(o=>o>0);
+  if(odds.length<2) return;
+  const soma = odds.reduce((s,o)=>s+1/o,0);
+  const somaAdj = soma*(1+margin);
+  const lucroR = banca/somaAdj - banca;
+  const rows = document.querySelectorAll('.dutch-r');
+  odds.forEach((o,i) => {
+    const stake = banca/(somaAdj*o);
+    const el = rows[i]?.querySelector('.dutch-result');
+    if(el) el.textContent = '£'+stake.toFixed(2);
+  });
+  document.getElementById('d-soma').textContent = somaAdj.toFixed(4);
+  document.getElementById('d-lucro').textContent = lucroR>=0 ? '£'+lucroR.toFixed(2) : '—';
+  document.getElementById('dutch-result').style.display = 'block';
+  const dstk = document.getElementById('dutch-stakes');
+  dstk.innerHTML = odds.map((o,i)=>{
+    const stake = banca/(somaAdj*o);
+    return `<div class="rr"><span class="rl">SELECÇÃO ${i+1} (odd ${o})</span><span class="rv pos">£${stake.toFixed(2)}</span></div>`;
+  }).join('');
+  const roi = (lucroR/banca*100).toFixed(1);
+  document.getElementById('d-info').textContent = lucroR>=0 ? `✅ ROI: ${roi}% | Ganhas £${lucroR.toFixed(2)} em qualquer cenário` : `⚠️ Margem elevada — sem lucro possível`;
+  document.getElementById('d-info').className = lucroR>=0 ? 'ibox ibox-g' : 'ibox ibox-y';
+}
+
+// ── KELLY ──
+function calcKelly() {
+  const odd = parseFloat(document.getElementById('k-odd').value)||0;
+  const prob = (parseFloat(document.getElementById('k-prob').value)||0)/100;
+  const banca = parseFloat(document.getElementById('k-banca').value)||500;
+  const frac = parseFloat(document.getElementById('k-frac').value)||0.5;
+  if(!odd||!prob||!banca) return;
+  const b = odd-1;
+  const q = 1-prob;
+  const kelly = (b*prob-q)/b;
+  const kellyAdj = kelly*frac;
+  const edge = (odd*prob-1)*100;
+  const stake = kellyAdj>0 ? banca*kellyAdj : 0;
+  const pct = Math.max(0,Math.min(100,kellyAdj*100));
+  document.getElementById('k-edge').textContent = edge.toFixed(1)+'%';
+  document.getElementById('k-edge').style.color = edge>0?'var(--green)':'var(--red)';
+  document.getElementById('k-stake').textContent = stake>0?'£'+stake.toFixed(2):'£0';
+  document.getElementById('k-pct').textContent = pct.toFixed(1)+'%';
+  document.getElementById('k-bar').style.width = Math.min(pct*2,100)+'%';
+  let info = '';
+  if(edge<=0) info = '❌ Sem edge. Não apostar — odd não oferece valor.';
+  else if(kelly>0.25) info = `⚠️ Kelly alto (${(kelly*100).toFixed(1)}%). Usar Half ou Quarter Kelly é mais seguro.`;
+  else info = `✅ Stake recomendado: £${stake.toFixed(2)} (${pct.toFixed(1)}% da banca)`;
+  document.getElementById('k-info').textContent = info;
+  document.getElementById('k-info').className = edge<=0?'ibox ibox-y':'ibox ibox-g';
+}
+
+// ── CASH OUT ──
+function calcCO() {
+  const sOrig = parseFloat(document.getElementById('co-stake').value)||0;
+  const oOrig = parseFloat(document.getElementById('co-odd-orig').value)||0;
+  const oNow = parseFloat(document.getElementById('co-odd-now').value)||0;
+  const com = (parseFloat(document.getElementById('co-com').value)||2)/100;
+  if(!sOrig||!oOrig||!oNow) return;
+  const cf = 1-com;
+  const retOrig = sOrig*oOrig;
+  const sLay = retOrig/oNow;
+  const lb = sLay*(oNow-1);
+  const profitNow = sLay*cf-sOrig;
+  const winFull = sOrig*(oOrig-1);
+  document.getElementById('co-sl').textContent = '£'+sLay.toFixed(2);
+  document.getElementById('co-lb').textContent = '£'+lb.toFixed(2);
+  const pEl = document.getElementById('co-profit');
+  pEl.textContent = fs(profitNow);
+  pEl.className = 'rv '+(profitNow>=0?'pos':'neg');
+  document.getElementById('co-win').textContent = '£'+winFull.toFixed(2);
+  document.getElementById('co-lose').textContent = '-£'+sOrig.toFixed(2);
+  const info = profitNow>0 ? `✅ Fechar agora garante +${fs(profitNow)} | Continuar arrisca -£${sOrig.toFixed(2)}` : `⚠️ Fechar agora dá ${fs(profitNow)} | Vale continuar se confiante`;
+  document.getElementById('co-info').textContent = info;
+  document.getElementById('co-info').className = profitNow>0?'ibox ibox-g':'ibox ibox-y';
+}
+
+// ── ODDS CONVERTER ──
+let converting = false;
+function convOdds(from) {
+  if(converting) return;
+  converting = true;
+  let dec = 0;
+  if(from==='dec') {
+    dec = parseFloat(document.getElementById('oc-dec').value)||0;
+    if(dec>1) {
+      const n = dec-1; const d = 1;
+      const g = gcd(Math.round(n*100),100);
+      document.getElementById('oc-frac').value = (Math.round(n*100)/g)+'/'+(100/g);
+      document.getElementById('oc-amer').value = dec>=2 ? '+'+(((dec-1)*100).toFixed(0)) : '-'+((100/(dec-1)).toFixed(0));
+    }
+  } else if(from==='frac') {
+    const v = document.getElementById('oc-frac').value;
+    const parts = v.split('/');
+    if(parts.length===2) {
+      const n=parseFloat(parts[0]),d=parseFloat(parts[1]);
+      if(n&&d) { dec=n/d+1; document.getElementById('oc-dec').value=dec.toFixed(2); document.getElementById('oc-amer').value=dec>=2?'+'+(((dec-1)*100).toFixed(0)):'-'+((100/(dec-1)).toFixed(0)); }
+    }
+  } else if(from==='amer') {
+    const v = document.getElementById('oc-amer').value;
+    const n = parseFloat(v);
+    if(!isNaN(n)) {
+      dec = n>0 ? n/100+1 : 100/Math.abs(n)+1;
+      document.getElementById('oc-dec').value=dec.toFixed(2);
+      const fr=dec-1; const g=gcd(Math.round(fr*100),100);
+      document.getElementById('oc-frac').value=(Math.round(fr*100)/g)+'/'+(100/g);
+    }
+  }
+  if(dec>1) {
+    const prob = (1/dec*100).toFixed(1);
+    document.getElementById('oc-prob').textContent = prob+'%';
+    document.getElementById('oc-ret').textContent = '£'+((dec-1).toFixed(2));
+    let cls = dec<1.5?'Favorito forte':dec<2?'Favorito':dec<3?'Ligeiro favorito':dec<5?'Underdog':dec<10?'Grande underdog':'Longshot';
+    document.getElementById('oc-class').textContent = cls;
+    document.getElementById('oc-info').textContent = `Por cada £1 apostado, recebes £${dec.toFixed(2)} (incluindo stake) se ganhar`;
+  }
+  converting = false;
+}
+
+function gcd(a,b) { return b===0?a:gcd(b,a%b); }
+
+function calcVB() {
+  const odd = parseFloat(document.getElementById('vb-odd').value)||0;
+  const prob = (parseFloat(document.getElementById('vb-prob').value)||0)/100;
+  if(!odd||!prob) return;
+  const edge = (odd*prob-1)*100;
+  document.getElementById('vb-edge').textContent = edge.toFixed(2)+'%';
+  document.getElementById('vb-edge').className = 'rv '+(edge>0?'pos':'neg');
+  document.getElementById('vb-result').innerHTML = edge>0 ? '<span class="badge badge-g">✅ VALUE BET — APOSTAR</span>' : '<span class="badge badge-r">❌ SEM VALUE — EVITAR</span>';
+}
+
+// ── LOG ──
+function openModal() { document.getElementById('modal').classList.add('active'); }
+function closeModal() { document.getElementById('modal').classList.remove('active'); }
+function closeModalOut(e) { if(e.target.id==='modal') closeModal(); }
+
+function saveAposta() {
+  const a = {
+    id: Date.now(),
+    jogo: document.getElementById('m-jogo').value||'Sem nome',
+    tipo: document.getElementById('m-tipo').value,
+    mercado: document.getElementById('m-mercado').value,
+    stake: parseFloat(document.getElementById('m-stake').value)||0,
+    odd: parseFloat(document.getElementById('m-odd').value)||0,
+    lexp: parseFloat(document.getElementById('m-lexp').value)||0,
+    status: document.getElementById('m-status').value,
+    lreal: document.getElementById('m-status').value==='win' ? parseFloat(document.getElementById('m-lexp').value)||0 : document.getElementById('m-status').value==='lose' ? -(parseFloat(document.getElementById('m-stake').value)||0) : null,
+    data: new Date().toLocaleDateString('pt-BR')
+  };
+  apostas.unshift(a);
+  localStorage.setItem('tp_apostas', JSON.stringify(apostas));
+  closeModal();
+  renderLog();
+}
+
+function renderLog() {
+  const el = document.getElementById('lista-apostas');
+  if(!apostas.length) { el.innerHTML='<div class="empty"><div class="eicon">📋</div><p>Nenhuma operação registada ainda.</p></div>'; return; }
+  el.innerHTML = apostas.map(a=>{
+    const pt = a.lreal!==null ? fs(a.lreal) : 'PENDENTE';
+    const pc = a.lreal>0?'pos':a.lreal<0?'neg':'yel';
+    const casaBackTag = a.casaBackNome ? `<span class="log-tag" style="background:var(--green-dim);color:var(--green);">📤 ${a.casaBackNome}</span>` : '';
+    const casaLayTag = a.casaLayNome ? `<span class="log-tag" style="background:var(--purple-dim);color:var(--purple);">📥 LAY: ${a.casaLayNome}</span>` : '';
+    return `<div class="log-item">
+      <div class="log-header"><div class="log-jogo">${a.jogo}</div><div class="log-pl ${pc}">${pt}</div></div>
+      <div class="log-tags">
+        <span class="log-tag">${a.data}</span>
+        <span class="log-tag">${a.tipo}</span>
+        <span class="log-tag">${a.mercado}</span>
+        <span class="log-tag">odd ${a.odd}</span>
+        <span class="log-tag">stake £${a.stake}</span>
+        ${casaBackTag}${casaLayTag}
+      </div>
+      ${a.status==='pending'?`<div class="log-actions"><button class="bwin" onclick="resolve(${a.id},'win')">✅ GREEN</button><button class="blose" onclick="resolve(${a.id},'lose')">❌ RED</button></div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function resolve(id, s) {
+  const a = apostas.find(x=>x.id===id);
+  if(!a) return;
+  a.status=s; a.lreal=s==='win'?a.lexp:-a.stake;
+  localStorage.setItem('tp_apostas', JSON.stringify(apostas));
+  renderLog(); updateStats();
+}
+
+// ── STATS ──
+function updateStats() {
+  const res = apostas.filter(a=>a.lreal!==null);
+  const tot = apostas.length;
+  const wins = res.filter(a=>a.lreal>0).length;
+  const luc = res.reduce((s,a)=>s+a.lreal,0);
+  const stk = res.reduce((s,a)=>s+a.stake,0);
+  const roi = stk>0?(luc/stk*100):null;
+  const wr = res.length>0?(wins/res.length*100):null;
+  document.getElementById('s-tot').textContent=tot;
+  const re=document.getElementById('s-roi'); re.textContent=roi!==null?roi.toFixed(1)+'%':'—'; re.className='sv '+(roi>0?'pos':roi<0?'neg':'neutral');
+  const le=document.getElementById('s-luc'); le.textContent='£'+luc.toFixed(2); le.className='sv '+(luc>0?'pos':luc<0?'neg':'neutral');
+  const we=document.getElementById('s-wr'); we.textContent=wr!==null?wr.toFixed(0)+'%':'—'; we.className='sv '+(wr>=50?'pos':wr<50&&wr!==null?'neg':'neutral');
+  drawChart();
+}
+
+function drawChart() {
+  const res = [...apostas].filter(a=>a.lreal!==null).reverse();
+  const ce=document.getElementById('chart-empty'), cv=document.getElementById('chart');
+  if(res.length<2){cv.style.display='none';ce.style.display='block';return;}
+  cv.style.display='block';ce.style.display='none';
+  const banca=parseFloat(document.getElementById('banca-ini').value)||500;
+  let run=banca;
+  const pts=[banca,...res.map(a=>{run+=a.lreal;return run;})];
+  const ctx=cv.getContext('2d');
+  const W=cv.offsetWidth,H=160;
+  cv.width=W*devicePixelRatio;cv.height=H*devicePixelRatio;ctx.scale(devicePixelRatio,devicePixelRatio);
+  const mn=Math.min(...pts)*0.97,mx=Math.max(...pts)*1.03;
+  const tx=i=>(i/(pts.length-1))*(W-20)+10;
+  const ty=v=>H-20-((v-mn)/(mx-mn))*(H-30);
+  ctx.clearRect(0,0,W,H);
+  const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#00e67630');g.addColorStop(1,'#00e67600');
+  ctx.beginPath();ctx.moveTo(tx(0),ty(pts[0]));pts.forEach((v,i)=>ctx.lineTo(tx(i),ty(v)));ctx.lineTo(tx(pts.length-1),H);ctx.lineTo(tx(0),H);ctx.fillStyle=g;ctx.fill();
+  ctx.beginPath();ctx.moveTo(tx(0),ty(pts[0]));pts.forEach((v,i)=>ctx.lineTo(tx(i),ty(v)));ctx.strokeStyle='#00e676';ctx.lineWidth=2;ctx.stroke();
+  pts.forEach((v,i)=>{ctx.beginPath();ctx.arc(tx(i),ty(v),3,0,Math.PI*2);ctx.fillStyle=v>=banca?'#00e676':'#ff3d57';ctx.fill();});
+}
+
+// ── UTILS ──
+function f(v) { return '£'+Math.abs(v).toFixed(2); }
+function fs(v) { return (v>=0?'+':'-')+'£'+Math.abs(v).toFixed(2); }
+function set(id,v) { const e=document.getElementById(id); e.textContent=fs(v); e.className='rv '+(v>=0?'pos':'neg'); }
+
+
+
+// ── PROGRESSÃO ──
+function calcProg() {
+  const stakeInicial = parseFloat(document.getElementById('pg-stake').value)||0;
+  const odd = parseFloat(document.getElementById('pg-odd').value)||0;
+  const pct = (parseFloat(document.getElementById('pg-pct').value)||10)/100;
+  const n = parseInt(document.getElementById('pg-n').value)||5;
+
+  if(!stakeInicial||!odd||odd<=1||n<1) return;
+
+  const b = odd - 1;
+  // Lucro alvo fixo = stakeInicial × % lucro
+  // Mesma fórmula da planilha: stake(n) = (prejuizo + lucroAlvo) / (odd-1)
+  const lucroAlvo = stakeInicial * pct;
+  let entradas = [];
+  let prejuizoAnterior = 0;
+
+  for(let i=0; i<n; i++) {
+    let stake;
+    if(i === 0) {
+      stake = stakeInicial;
+    } else {
+      stake = (prejuizoAnterior + lucroAlvo) / b;
+    }
+
+    const totalInvestido = prejuizoAnterior + stake;
+    const retornoBruto = stake * odd;
+    const lucroLiquido = retornoBruto - totalInvestido; // lucro REAL descontando prejuizo anterior
+    const saldoSeGanhar = lucroLiquido;
+    const saldoSePerder = -(totalInvestido);
+
+    entradas.push({
+      n: i+1,
+      prejuizoAnterior,
+      stake,
+      totalInvestido,
+      retornoBruto,
+      lucroLiquido,
+      saldoSeGanhar,
+      saldoSePerder
+    });
+
+    prejuizoAnterior = totalInvestido;
+  }
+
+  // Render
+  const rows = document.getElementById('prog-rows');
+  rows.innerHTML = entradas.map(e => {
+    const isPos = e.lucroLiquido >= 0;
+    const cor = isPos ? 'var(--green)' : 'var(--red)';
+    return `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid ${cor};border-radius:10px;padding:12px;margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div style="font-size:13px;font-weight:800;font-family:'Space Mono',monospace;color:var(--text);">ENTRADA ${e.n}</div>
+        <div style="font-size:11px;font-weight:700;font-family:'Space Mono',monospace;color:${cor};">${isPos ? '✅ POSITIVO' : '❌ NEGATIVO'}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+        <div>
+          <div style="font-size:9px;color:var(--muted);font-family:'Space Mono',monospace;margin-bottom:2px;">PREJUÍZO ANTERIOR</div>
+          <div style="font-size:14px;font-weight:700;font-family:'Space Mono',monospace;color:var(--red);">-£${e.prejuizoAnterior.toFixed(2)}</div>
+        </div>
+        <div>
+          <div style="font-size:9px;color:var(--muted);font-family:'Space Mono',monospace;margin-bottom:2px;">ENTRADA ACTUAL</div>
+          <div style="font-size:14px;font-weight:700;font-family:'Space Mono',monospace;color:var(--cyan);">£${e.stake.toFixed(2)}</div>
+        </div>
+        <div>
+          <div style="font-size:9px;color:var(--muted);font-family:'Space Mono',monospace;margin-bottom:2px;">TOTAL INVESTIDO</div>
+          <div style="font-size:14px;font-weight:700;font-family:'Space Mono',monospace;color:var(--yellow);">£${e.totalInvestido.toFixed(2)}</div>
+        </div>
+        <div>
+          <div style="font-size:9px;color:var(--muted);font-family:'Space Mono',monospace;margin-bottom:2px;">RETORNO BRUTO</div>
+          <div style="font-size:14px;font-weight:700;font-family:'Space Mono',monospace;color:var(--text);">£${e.retornoBruto.toFixed(2)}</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;border-top:1px solid var(--border);padding-top:8px;">
+        <div style="background:var(--green-dim);border:1px solid var(--green);border-radius:8px;padding:8px;">
+          <div style="font-size:9px;color:var(--green);font-family:'Space Mono',monospace;margin-bottom:2px;">✅ LUCRO SE GANHAR</div>
+          <div style="font-size:16px;font-weight:800;font-family:'Space Mono',monospace;color:${isPos?'var(--green)':'var(--red)'};">${isPos?'+':''}£${e.lucroLiquido.toFixed(2)}</div>
+        </div>
+        <div style="background:var(--red-dim);border:1px solid var(--red);border-radius:8px;padding:8px;">
+          <div style="font-size:9px;color:var(--red);font-family:'Space Mono',monospace;margin-bottom:2px;">❌ PERDA SE PERDER</div>
+          <div style="font-size:16px;font-weight:800;font-family:'Space Mono',monospace;color:var(--red);">-£${e.totalInvestido.toFixed(2)}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const lucro1 = entradas[0].lucroLiquido;
+  const perdaTotal = entradas[entradas.length-1].totalInvestido;
+  const racio = (lucro1/perdaTotal).toFixed(2);
+
+  document.getElementById('pg-lucro1').textContent = '+£'+lucro1.toFixed(2);
+  document.getElementById('pg-perda-total').textContent = '-£'+perdaTotal.toFixed(2);
+  document.getElementById('pg-racio').textContent = '1:'+racio;
+
+  const positivas = entradas.filter(e=>e.lucroLiquido>0).length;
+  document.getElementById('pg-info').textContent = `${positivas} de ${n} entradas são positivas. Perda máxima se perder tudo: £${perdaTotal.toFixed(2)}`;
+  document.getElementById('pg-info').className = positivas >= 3 ? 'ibox ibox-g' : 'ibox ibox-y';
+}
+
+
+// ── FUTEBOL ESTATÍSTICAS ──
+const RAPID_KEY = '4f71da0b6bmshfae96741e950724p109c15jsn852c189faafd';
+
+let timesCache = {};
+
+async function carregarTimes() {
+  const liga = document.getElementById('ft-liga').value;
+  const epoca = document.getElementById('ft-epoca').value;
+  const card = document.getElementById('ft-times-card');
+  const select = document.getElementById('ft-time-select');
+
+  card.style.display = 'none';
+  document.getElementById('ft-resultado').style.display = 'none';
+  document.getElementById('ft-loading').style.display = 'block';
+
+  try {
+    const url1 = `https://api-football-v1.p.rapidapi.com/v3/standings?league=${liga}&season=${epoca}`;
+    const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(url1)}`, {
+      headers: {
+        'X-RapidAPI-Key': RAPID_KEY,
+        'X-RapidAPI-Host': 'api-football-v1.p.rapidapi.com'
+      }
+    });
+    const data = await res.json();
+    const standings = data?.response?.[0]?.league?.standings?.[0] || [];
+
+    timesCache = {};
+    select.innerHTML = '<option value="">-- Seleccionar time --</option>';
+
+    standings.forEach(t => {
+      timesCache[t.team.id] = {
+        nome: t.team.name,
+        logo: t.team.logo,
+        posicao: t.rank,
+        liga: data.response[0].league.name,
+        jogos: t.all.played,
+        vitorias: t.all.win,
+        empates: t.all.draw,
+        derrotas: t.all.lose,
+        gm: t.all.goals.for,
+        gs: t.all.goals.against,
+        hv: t.home.win,
+        hg: t.home.goals.for,
+        av: t.away.win,
+        ag: t.away.goals.for,
+      };
+      const opt = document.createElement('option');
+      opt.value = t.team.id;
+      opt.textContent = `${t.rank}. ${t.team.name}`;
+      select.appendChild(opt);
+    });
+
+    document.getElementById('ft-loading').style.display = 'none';
+    card.style.display = 'block';
+
+  } catch(e) {
+    document.getElementById('ft-loading').style.display = 'none';
+    alert('Erro ao carregar times. Verifica a chave API.');
+    console.error(e);
+  }
+}
+
+async function carregarEstatisticas() {
+  const liga = document.getElementById('ft-liga').value;
+  const epoca = document.getElementById('ft-epoca').value;
+  const timeId = document.getElementById('ft-time-select').value;
+  if(!timeId) return;
+
+  document.getElementById('ft-resultado').style.display = 'none';
+  document.getElementById('ft-loading').style.display = 'block';
+
+  try {
+    const url2 = `https://api-football-v1.p.rapidapi.com/v3/teams/statistics?league=${liga}&season=${epoca}&team=${timeId}`;
+    const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(url2)}`, {
+      headers: {
+        'X-RapidAPI-Key': RAPID_KEY,
+        'X-RapidAPI-Host': 'api-football-v1.p.rapidapi.com'
+      }
+    });
+    const data = await res.json();
+    const s = data?.response;
+    if(!s) throw new Error('Sem dados');
+
+    const t = timesCache[timeId] || {};
+    const jogos = s.fixtures?.played?.total || 0;
+    const gm = s.goals?.for?.total?.total || 0;
+    const gs = s.goals?.against?.total?.total || 0;
+    const mg = jogos > 0 ? (gm/jogos).toFixed(2) : '—';
+    const mgs = jogos > 0 ? (gs/jogos).toFixed(2) : '—';
+
+    // Over 2.5
+    const over25 = s.goals?.for?.total?.total !== undefined ? (() => {
+      const gfAvg = gm/jogos;
+      const gaAvg = gs/jogos;
+      const totalAvg = gfAvg + gaAvg;
+      return totalAvg;
+    })() : 0;
+
+    // BTTS - ambas marcam
+    const btts_pct = s.clean_sheet ? Math.round((1 - s.clean_sheet.total/jogos)*100) : '—';
+
+    // Clean sheet
+    const cs_total = s.clean_sheet?.total || 0;
+    const cs_pct = jogos > 0 ? Math.round(cs_total/jogos*100) : 0;
+
+    // Over 1.5
+    const over15_est = jogos > 0 ? Math.round(((gm+gs)/jogos > 1.5 ? 70 : 45)) : '—';
+
+    // Cantos
+    const cantos_avg = s.biggest?.goals ? '—' : '—';
+
+    // Amarelos
+    const amarelos = s.cards?.yellow;
+    const amarelos_total = amarelos ? Object.values(amarelos).reduce((acc, v) => acc + (v?.total||0), 0) : 0;
+    const amarelos_avg = jogos > 0 ? (amarelos_total/jogos).toFixed(1) : '—';
+
+    // Vermelhos
+    const vermelhos = s.cards?.red;
+    const vermelhos_total = vermelhos ? Object.values(vermelhos).reduce((acc, v) => acc + (v?.total||0), 0) : 0;
+    const vermelhos_avg = jogos > 0 ? (vermelhos_total/jogos).toFixed(2) : '—';
+
+    // Forma recente
+    const forma = s.form || '';
+    const formaEl = document.getElementById('ft-forma');
+    formaEl.innerHTML = forma.split('').slice(-10).map(f => {
+      const cor = f==='W'?'var(--green)':f==='D'?'var(--yellow)':'var(--red)';
+      const label = f==='W'?'V':f==='D'?'E':'D';
+      return `<div style="width:28px;height:28px;border-radius:50%;background:${cor};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#000;">${label}</div>`;
+    }).join('');
+
+    // Preencher dados
+    document.getElementById('ft-logo').src = t.logo || '';
+    document.getElementById('ft-nome').textContent = t.nome || s.team?.name || '—';
+    document.getElementById('ft-liga-nome').textContent = t.liga || '';
+    document.getElementById('ft-posicao').textContent = t.posicao ? `#${t.posicao}` : '—';
+
+    document.getElementById('ft-jogos').textContent = jogos;
+    document.getElementById('ft-vitorias').textContent = t.vitorias || '—';
+    document.getElementById('ft-empates').textContent = t.empates || '—';
+    document.getElementById('ft-derrotas').textContent = t.derrotas || '—';
+    document.getElementById('ft-gm').textContent = gm;
+    document.getElementById('ft-gs').textContent = gs;
+    document.getElementById('ft-mg').textContent = mg + '/jogo';
+    document.getElementById('ft-mgs').textContent = mgs + '/jogo';
+
+    document.getElementById('ft-hv').textContent = `${t.hv || '—'} vitórias`;
+    document.getElementById('ft-hg').textContent = `${t.hg || '—'} golos`;
+    document.getElementById('ft-av').textContent = `${t.av || '—'} vitórias`;
+    document.getElementById('ft-ag').textContent = `${t.ag || '—'} golos`;
+
+    document.getElementById('ft-amarelos').textContent = amarelos_avg + '/jogo';
+    document.getElementById('ft-vermelhos').textContent = vermelhos_avg + '/jogo';
+    document.getElementById('ft-cantos').textContent = '—';
+
+    // Mercados
+    const over25_pct = jogos > 0 ? Math.round(over25 > 2.5 ? 65 : 40) : '—';
+    document.getElementById('ft-over25').textContent = over25_pct + '%';
+    document.getElementById('ft-over25-j').textContent = `Média ${(gm+gs)/jogos > 0 ? ((gm+gs)/jogos).toFixed(2) : '—'} golos/jogo`;
+    document.getElementById('ft-btts').textContent = btts_pct + '%';
+    document.getElementById('ft-btts-j').textContent = `${cs_total} clean sheets`;
+    document.getElementById('ft-over15').textContent = over15_est + '%';
+    document.getElementById('ft-over15-j').textContent = 'estimativa';
+    document.getElementById('ft-cs').textContent = cs_pct + '%';
+    document.getElementById('ft-cs-j').textContent = `${cs_total} jogos`;
+
+    // Análise automática
+    const analise = [];
+    const totalGolJogo = (gm+gs)/jogos;
+    if(totalGolJogo >= 2.5) analise.push({txt: `✅ Média de ${totalGolJogo.toFixed(2)} golos/jogo — favorável ao OVER 2.5`, cor: 'var(--green)'});
+    else analise.push({txt: `⚠️ Média de ${totalGolJogo.toFixed(2)} golos/jogo — cuidado com OVER 2.5`, cor: 'var(--yellow)'});
+    if(parseFloat(mg) >= 1.5) analise.push({txt: `✅ ${mg} golos marcados/jogo — ataque forte`, cor: 'var(--green)'});
+    if(parseFloat(mgs) >= 1.5) analise.push({txt: `⚠️ ${mgs} golos sofridos/jogo — defesa fraca`, cor: 'var(--yellow)'});
+    if(cs_pct >= 30) analise.push({txt: `✅ ${cs_pct}% de clean sheets — defesa sólida`, cor: 'var(--green)'});
+    if(btts_pct >= 60) analise.push({txt: `✅ ${btts_pct}% ambas marcam — BTTS interessante`, cor: 'var(--green)'});
+    if(parseFloat(amarelos_avg) >= 2.5) analise.push({txt: `🟡 ${amarelos_avg} amarelos/jogo — jogo fisicamente intenso`, cor: 'var(--yellow)'});
+
+    const lastW = (forma.match(/W/g)||[]).length;
+    const lastL = (forma.match(/L/g)||[]).length;
+    if(lastW >= 6) analise.push({txt: `✅ Excelente forma — ${lastW} vitórias nos últimos 10 jogos`, cor: 'var(--green)'});
+    else if(lastL >= 6) analise.push({txt: `❌ Má forma — ${lastL} derrotas nos últimos 10 jogos`, cor: 'var(--red)'});
+
+    document.getElementById('ft-analise-content').innerHTML = analise.map(a =>
+      `<div style="padding:8px 10px;margin-bottom:6px;border-radius:8px;background:var(--surface2);border-left:3px solid ${a.cor};font-size:11px;font-family:'Space Mono',monospace;color:${a.cor};line-height:1.5;">${a.txt}</div>`
+    ).join('');
+
+    document.getElementById('ft-loading').style.display = 'none';
+    document.getElementById('ft-resultado').style.display = 'block';
+
+  } catch(e) {
+    document.getElementById('ft-loading').style.display = 'none';
+    alert('Erro ao carregar estatísticas: ' + e.message);
+    console.error(e);
+  }
+}
+
+// ── CASAS ──
+let casas = JSON.parse(localStorage.getItem('tp_casas') || '[]');
+let movimentos = JSON.parse(localStorage.getItem('tp_movimentos') || '[]');
+
+function saveCasasData() {
+  localStorage.setItem('tp_casas', JSON.stringify(casas));
+  localStorage.setItem('tp_movimentos', JSON.stringify(movimentos));
+}
+
+function openModalCasa() { document.getElementById('modal-casa').classList.add('active'); }
+function closeModalCasa() { document.getElementById('modal-casa').classList.remove('active'); }
+function closeModalCasaOut(e) { if(e.target.id==='modal-casa') closeModalCasa(); }
+
+function openModalDeposito() {
+  populateCasaSelects();
+  document.getElementById('modal-dep').classList.add('active');
+}
+function closeModalDep() { document.getElementById('modal-dep').classList.remove('active'); }
+function closeModalDepOut(e) { if(e.target.id==='modal-dep') closeModalDep(); }
+
+function saveCasa() {
+  const nome = document.getElementById('mc-nome').value.trim();
+  if(!nome) return;
+  casas.push({
+    id: Date.now(),
+    nome: nome,
+    tipo: document.getElementById('mc-tipo').value,
+    saldo: parseFloat(document.getElementById('mc-saldo').value)||0,
+    com: parseFloat(document.getElementById('mc-com').value)||0,
+    cor: ['#00e676','#2979ff','#7c5cfc','#ffd740','#ff6d00','#00e5ff','#ff3d57'][casas.length % 7]
+  });
+  saveCasasData();
+  closeModalCasa();
+  document.getElementById('mc-nome').value='';
+  document.getElementById('mc-saldo').value='0';
+  renderCasas();
+  populateCasaSelects();
+}
+
+function saveDeposito() {
+  const casaId = parseInt(document.getElementById('md-casa').value);
+  const tipo = document.getElementById('md-tipo').value;
+  const valor = parseFloat(document.getElementById('md-valor').value)||0;
+  const nota = document.getElementById('md-nota').value;
+  if(!casaId||!valor) return;
+  const casa = casas.find(c=>c.id===casaId);
+  if(!casa) return;
+  const delta = tipo==='lev' ? -valor : valor;
+  casa.saldo += delta;
+  movimentos.push({
+    id: Date.now(),
+    casaId: casaId,
+    casaNome: casa.nome,
+    tipo: tipo,
+    valor: valor,
+    delta: delta,
+    nota: nota,
+    data: new Date().toLocaleDateString('pt-BR')
+  });
+  saveCasasData();
+  closeModalDep();
+  document.getElementById('md-valor').value='';
+  document.getElementById('md-nota').value='';
+  renderCasas();
+}
+
+function deleteCasa(id) {
+  if(!confirm('Remover esta casa?')) return;
+  casas = casas.filter(c=>c.id!==id);
+  saveCasasData();
+  renderCasas();
+  populateCasaSelects();
+}
+
+function renderCasas() {
+  const el = document.getElementById('casas-lista');
+  const total = casas.reduce((s,c)=>s+c.saldo,0);
+  document.getElementById('casas-total').textContent = '£'+total.toFixed(2);
+  if(!casas.length) {
+    el.innerHTML='<div class="empty"><div class="eicon">🏦</div><p>Nenhuma casa adicionada ainda.<br>Clica em + ADICIONAR CASA</p></div>';
+    return;
+  }
+  el.innerHTML = casas.map(c => {
+    const hist = movimentos.filter(m=>m.casaId===c.id).slice(-3).reverse();
+    const histHtml = hist.length ? hist.map(m=>`<div style="display:flex;justify-content:space-between;font-size:10px;font-family:'Space Mono',monospace;padding:3px 0;border-bottom:1px solid var(--border);"><span style="color:var(--muted)">${m.data} ${m.tipo==='dep'?'💰 Depósito':m.tipo==='lev'?'💸 Levantamento':'🎁 Bónus'}</span><span style="color:${m.delta>=0?'var(--green)':'var(--red)'}">${m.delta>=0?'+':''} £${Math.abs(m.delta).toFixed(2)}</span></div>`).join('') : '';
+    return `<div class="card" style="border-top:3px solid ${c.cor};margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div>
+          <div style="font-size:15px;font-weight:800;color:${c.cor};">${c.nome}</div>
+          <div style="font-size:10px;color:var(--muted);font-family:'Space Mono',monospace;">${c.tipo==='exchange'?'EXCHANGE (BACK+LAY)':'CASA NORMAL (BACK)'}${c.com>0?' · COM '+c.com+'%':''}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:22px;font-weight:800;font-family:'Space Mono',monospace;color:${c.saldo>=0?'var(--green)':'var(--red)'};">£${c.saldo.toFixed(2)}</div>
+          <div style="font-size:10px;color:var(--muted);font-family:'Space Mono',monospace;">${(c.saldo/Math.max(0.01,casas.reduce((s,x)=>s+Math.max(0,x.saldo),0))*100).toFixed(0)}% da banca</div>
+        </div>
+      </div>
+      ${histHtml ? `<div style="margin-top:8px;">${histHtml}</div>` : ''}
+      <div style="display:flex;gap:6px;margin-top:10px;">
+        <button onclick="openModalDepCasa(${c.id})" style="flex:1;padding:8px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;border:none;background:var(--green-dim);color:var(--green);border:1px solid var(--green);">💰 DEPÓSITO</button>
+        <button onclick="openModalLevCasa(${c.id})" style="flex:1;padding:8px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;border:none;background:var(--red-dim);color:var(--red);border:1px solid var(--red);">💸 LEVANTAMENTO</button>
+        <button onclick="deleteCasa(${c.id})" style="width:32px;height:32px;border-radius:8px;font-size:14px;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--muted);">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openModalDepCasa(id) {
+  populateCasaSelects();
+  document.getElementById('md-casa').value = id;
+  document.getElementById('md-tipo').value = 'dep';
+  document.getElementById('modal-dep').classList.add('active');
+}
+
+function openModalLevCasa(id) {
+  populateCasaSelects();
+  document.getElementById('md-casa').value = id;
+  document.getElementById('md-tipo').value = 'lev';
+  document.getElementById('modal-dep').classList.add('active');
+}
+
+function populateCasaSelects() {
+  const selects = ['md-casa', 'm-casa-back', 'm-casa-lay'];
+  selects.forEach(id => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    const val = el.value;
+    const emptyOpt = id==='md-casa' ? '<option value="">-- Seleccionar --</option>' : id==='m-casa-back' ? '<option value="">-- Seleccionar --</option>' : '<option value="">-- Nenhuma / Mesma casa --</option>';
+    el.innerHTML = emptyOpt + casas.map(c=>`<option value="${c.id}">${c.nome} (£${c.saldo.toFixed(2)})</option>`).join('');
+    if(val) el.value = val;
+  });
+}
+
+// Update saveAposta to handle casas
+const _origSaveAposta = saveAposta;
+saveAposta = function() {
+  const casaBackId = parseInt(document.getElementById('m-casa-back').value)||null;
+  const casaLayId = parseInt(document.getElementById('m-casa-lay').value)||null;
+  const stake = parseFloat(document.getElementById('m-stake').value)||0;
+  const lexp = parseFloat(document.getElementById('m-lexp').value)||0;
+  const status = document.getElementById('m-status').value;
+
+  const a = {
+    id: Date.now(),
+    jogo: document.getElementById('m-jogo').value||'Sem nome',
+    tipo: document.getElementById('m-tipo').value,
+    mercado: document.getElementById('m-mercado').value,
+    casaBackId: casaBackId,
+    casaBackNome: casaBackId ? (casas.find(c=>c.id===casaBackId)||{nome:'?'}).nome : null,
+    casaLayId: casaLayId,
+    casaLayNome: casaLayId ? (casas.find(c=>c.id===casaLayId)||{nome:'?'}).nome : null,
+    stake: stake,
+    odd: parseFloat(document.getElementById('m-odd').value)||0,
+    lexp: lexp,
+    status: status,
+    lreal: status==='win' ? lexp : status==='lose' ? -stake : null,
+    data: new Date().toLocaleDateString('pt-BR')
+  };
+
+  // Adjust balances if status already defined
+  if(status !== 'pending') {
+    adjustBalances(a);
+  }
+
+  apostas.unshift(a);
+  localStorage.setItem('tp_apostas', JSON.stringify(apostas));
+  closeModal();
+  renderLog();
+  renderCasas();
+};
+
+function adjustBalances(a) {
+  if(a.casaBackId) {
+    const casa = casas.find(c=>c.id===a.casaBackId);
+    if(casa) {
+      // Back stake always deducted, profit added on win
+      if(a.status==='win') {
+        casa.saldo += a.lreal + 0; // net profit
+        movimentos.push({id:Date.now(), casaId:casa.id, casaNome:casa.nome, tipo:'bet_win', valor:a.lreal, delta:a.lreal, nota:`✅ ${a.jogo}`, data:a.data});
+      } else if(a.status==='lose') {
+        casa.saldo += a.lreal; // negative
+        movimentos.push({id:Date.now()+1, casaId:casa.id, casaNome:casa.nome, tipo:'bet_lose', valor:Math.abs(a.lreal), delta:a.lreal, nota:`❌ ${a.jogo}`, data:a.data});
+      }
+      saveCasasData();
+    }
+  }
+}
+
+// Override resolve to update balances
+const _origResolve = resolve;
+resolve = function(id, s) {
+  const a = apostas.find(x=>x.id===id);
+  if(!a) return;
+  a.status=s;
+  a.lreal=s==='win'?a.lexp:-a.stake;
+  adjustBalances(a);
+  localStorage.setItem('tp_apostas', JSON.stringify(apostas));
+  saveCasasData();
+  renderLog();
+  renderCasas();
+  updateStats();
+};
+
+// ── INIT CASAS ──
+renderCasas();
+populateCasaSelects();
+
+// ── INIT ──
+calc(); calcArb(); calcVB(); convOdds('dec'); calcProg();
+</script>
+</body>
+</html>
