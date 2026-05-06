@@ -170,12 +170,7 @@ label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spa
 }
 .liga-selector select { max-width:300px; }
 .season-toggle { display:flex; gap:4px; }
-.season-btn {
-  padding:6px 12px; border-radius:6px; font-size:11px; cursor:pointer;
-  background:var(--bg3); border:1px solid var(--border); color:var(--muted);
-  transition:all 0.2s; font-family:'JetBrains Mono',monospace;
-}
-.season-btn.active { background:rgba(0,255,135,0.1); border-color:var(--green); color:var(--green); }
+
 
 .standings-table td:nth-child(1) { color:var(--muted); width:30px; }
 .standings-table .team-name { font-weight:600; }
@@ -354,7 +349,7 @@ label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spa
   <div class="nav-logo">⚡ Futebol <span>Automático</span></div>
   <div class="nav-links">
     <button class="nav-link active" onclick="showPage('monitor')">Monitor</button>
-    <button class="nav-link" onclick="showPage('ligas')">Ligas</button>
+    
     <button class="nav-link" onclick="showPage('casas')">Casas</button>
     <button class="nav-link" onclick="showPage('stats')">Stats</button>
     <button class="nav-link" onclick="showPage('registo')">Registo</button>
@@ -427,47 +422,6 @@ label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spa
       <p>Nenhuma arb registada ainda</p>
       <p style="font-size:11px;margin-top:8px">As arbs chegam via Telegram — regista aqui para acompanhar</p>
     </div>
-  </div>
-</div>
-
-<!-- ══════════════════════════════════════════
-     LIGAS PAGE
-══════════════════════════════════════════ -->
-<div class="page" id="page-ligas">
-  <div class="section-header">
-    <div class="section-title">Ligas</div>
-  </div>
-
-  <div class="liga-selector">
-    <select id="liga-select" onchange="loadLiga()">
-      <option value="39">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League</option>
-      <option value="40">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Championship</option>
-      <option value="140">🇪🇸 La Liga</option>
-      <option value="78">🇩🇪 Bundesliga</option>
-      <option value="135">🇮🇹 Serie A</option>
-      <option value="2">🏆 Champions League</option>
-      <option value="88">🇳🇱 Eredivisie</option>
-      <option value="61">🇫🇷 Ligue 1</option>
-      <option value="94">🇵🇹 Primeira Liga</option>
-      <option value="179">🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scottish Premiership</option>
-      <option value="203">🇹🇷 Süper Lig</option>
-      <option value="144">🇧🇪 Jupiler Pro League</option>
-      <option value="197">🇬🇷 Super League Greece</option>
-      <option value="3">🇪🇺 Europa League</option>
-      <option value="848">🇪🇺 Conference League</option>
-      <option value="253">🇺🇸 MLS</option>
-      <option value="103">🇳🇴 Eliteserien</option>
-      <option value="113">🇸🇪 Allsvenskan</option>
-    </select>
-    <div class="season-toggle">
-      <button class="season-btn active" id="btn-2025" onclick="setSeason(2025)">2025/26</button>
-      <button class="season-btn" id="btn-2024" onclick="setSeason(2024)">2024/25</button>
-    </div>
-    <button class="btn btn-outline" onclick="loadLiga()">↻ Actualizar</button>
-  </div>
-
-  <div id="liga-content">
-    <div class="loading"><div class="spinner"></div> A carregar...</div>
   </div>
 </div>
 
@@ -713,9 +667,7 @@ label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spa
   <div class="bnav-item active" onclick="showPage('monitor')">
     <div class="bnav-icon">📡</div><div class="bnav-label">Monitor</div>
   </div>
-  <div class="bnav-item" onclick="showPage('ligas')">
-    <div class="bnav-icon">⚽</div><div class="bnav-label">Ligas</div>
-  </div>
+
   <div class="bnav-item" onclick="showPage('casas')">
     <div class="bnav-icon">🏦</div><div class="bnav-label">Casas</div>
   </div>
@@ -858,15 +810,7 @@ label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spa
 <div class="toast" id="toast"></div>
 
 <script>
-const AF_KEY = 'f1353f09a4b7b604f6fcc7f22d950fe3';
-// TheSportsDB — gratuita, sem chave, CORS nativo, cobre todas as ligas
-const TSDB = 'https://www.thesportsdb.com/api/v1/json/123';
-const TSDB_MAP = {
-  '39':4328,'40':4329,'140':4335,'78':4331,'135':4332,
-  '2':4480,'88':4337,'61':4334,'94':4344,'179':4330,
-  '203':4343,'144':4396,'197':4400,'3':4481,'848':4482,
-  '253':4346,'103':4345,'113':4351
-};
+
 
 // ── CASAS UK PRÉ-CARREGADAS ──────────────────────────────
 const CASAS_UK = [
@@ -1030,164 +974,6 @@ function removeArb(idx){
   state.arbs.splice(real,1);
   saveState(); renderMonitor();
   toast('Arb removida');
-}
-
-// ══════════════════════════════════════════════════════════
-// LIGAS — TheSportsDB (gratuita, CORS nativo, 19 ligas)
-// ══════════════════════════════════════════════════════════
-async function tsdbGet(url){
-  try {
-    const res = await fetch(url);
-    if(!res.ok) return null;
-    return await res.json();
-  } catch(e){ return null; }
-}
-
-function setSeason(s){
-  state.currentSeason=s;
-  document.getElementById('btn-2025').classList.toggle('active',s===2025);
-  document.getElementById('btn-2024').classList.toggle('active',s===2024);
-  ligaCache={};
-  loadLiga();
-}
-
-let ligaCache = {};
-
-async function loadLiga(){
-  const ligaId = document.getElementById('liga-select').value;
-  const season = state.currentSeason;
-  const cacheKey = ligaId+'_'+season;
-  const el = document.getElementById('liga-content');
-  el.innerHTML = `<div class="loading"><div class="spinner"></div> A carregar...</div>`;
-
-  if(ligaCache[cacheKey]){ renderLigaData(ligaCache[cacheKey]); return; }
-
-  const tsdbId = TSDB_MAP[ligaId];
-  if(!tsdbId){
-    el.innerHTML = `<div class="empty-state"><div class="empty-icon">🌍</div><p>Liga não disponível</p></div>`;
-    return;
-  }
-
-  const seasonStr = season === 2025 ? '2025-2026' : '2024-2025';
-
-  const [standings, pastEvents, nextEvents] = await Promise.all([
-    tsdbGet(`${TSDB}/lookuptable.php?l=${tsdbId}&s=${seasonStr}`),
-    tsdbGet(`${TSDB}/eventspastleague.php?id=${tsdbId}`),
-    tsdbGet(`${TSDB}/eventsnextleague.php?id=${tsdbId}`),
-  ]);
-
-  const data = {standings, pastEvents, nextEvents};
-  ligaCache[cacheKey] = data;
-  renderLigaData(data);
-}
-
-function renderLigaData(data){
-  const el = document.getElementById('liga-content');
-  let html = `<div class="tabs">
-    <div class="tab active" onclick="switchTab(this,'tab-standings')">Classificação</div>
-    <div class="tab" onclick="switchTab(this,'tab-results')">Resultados</div>
-    <div class="tab" onclick="switchTab(this,'tab-fixtures')">Próximos</div>
-  </div>`;
-
-  // STANDINGS — TheSportsDB format
-  html += `<div id="tab-standings" class="tab-content">`;
-  const tbl = data.standings?.table;
-  if(tbl && tbl.length){
-    html += `<div class="card"><table class="standings-table">
-      <thead><tr><th>#</th><th>Equipa</th><th>J</th><th>V</th><th>E</th><th>D</th><th>GM</th><th>GS</th><th>DG</th><th>Pts</th><th>Forma</th></tr></thead><tbody>`;
-    tbl.forEach(t => {
-      const form = (t.strForm||'').split('').slice(-5).map(f=>{
-        const r = f==='W'?'W':f==='D'?'D':'L';
-        return `<span class="form-badge form-${r}">${r}</span>`;
-      }).join('');
-      const dg = parseInt(t.intGoalDifference||0);
-      const dgStr = dg > 0 ? '+'+dg : dg;
-      html += `<tr>
-        <td>${t.intRank}</td>
-        <td class="team-name">${t.strTeam}</td>
-        <td>${t.intPlayed}</td>
-        <td>${t.intWin}</td>
-        <td>${t.intDraw}</td>
-        <td>${t.intLoss}</td>
-        <td>${t.intGoalsFor}</td>
-        <td>${t.intGoalsAgainst}</td>
-        <td>${dgStr}</td>
-        <td class="pts">${t.intPoints}</td>
-        <td>${form}</td>
-      </tr>`;
-    });
-    html += `</tbody></table></div>`;
-  } else {
-    html += `<div class="empty-state"><div class="empty-icon">📊</div><p>Classificação não disponível para esta época</p></div>`;
-  }
-  html += `</div>`;
-
-  // RESULTS — TheSportsDB past events
-  html += `<div id="tab-results" class="tab-content" style="display:none">`;
-  const results = data.pastEvents?.events;
-  if(results && results.length){
-    html += `<div class="card"><div class="fixtures-list">`;
-    [...results].slice(-10).reverse().forEach(f => {
-      const d = new Date(f.dateEvent+'T'+(f.strTime||'12:00:00'));
-      const dateStr = d.toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit'});
-      const sh = f.intHomeScore ?? '-';
-      const sa = f.intAwayScore ?? '-';
-      html += `<div class="fixture-row">
-        <div class="fixture-teams">
-          <span>${f.strHomeTeam}</span>
-          <span class="fixture-vs">vs</span>
-          <span>${f.strAwayTeam}</span>
-        </div>
-        <div style="display:flex;gap:12px;align-items:center">
-          <span class="fixture-score">${sh} - ${sa}</span>
-          <span class="fixture-date">${dateStr}</span>
-        </div>
-      </div>`;
-    });
-    html += `</div></div>`;
-  } else {
-    html += `<div class="empty-state"><div class="empty-icon">⚽</div><p>Resultados não disponíveis</p></div>`;
-  }
-  html += `</div>`;
-
-  // FIXTURES — TheSportsDB next events
-  html += `<div id="tab-fixtures" class="tab-content" style="display:none">`;
-  const fixtures = data.nextEvents?.events;
-  if(fixtures && fixtures.length){
-    html += `<div class="card"><div class="fixtures-list">`;
-    fixtures.slice(0,10).forEach(f => {
-      const d = new Date(f.dateEvent+'T'+(f.strTime||'12:00:00'));
-      const dateStr = d.toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit'});
-      const timeStr = d.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'});
-      html += `<div class="fixture-row">
-        <div class="fixture-teams">
-          <span>${f.strHomeTeam}</span>
-          <span class="fixture-vs">vs</span>
-          <span>${f.strAwayTeam}</span>
-        </div>
-        <div style="display:flex;gap:12px;align-items:center">
-          <span class="fixture-time">${timeStr}</span>
-          <span class="fixture-date">${dateStr}</span>
-        </div>
-      </div>`;
-    });
-    html += `</div></div>`;
-  } else {
-    html += `<div class="empty-state"><div class="empty-icon">📅</div><p>Próximos jogos não disponíveis</p></div>`;
-  }
-  html += `</div>`;
-
-  el.innerHTML = html;
-}
-
-function switchTab(el, tabId){
-  const tabs = el.closest('.tabs');
-  tabs.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  el.classList.add('active');
-  const parent = tabs.parentElement;
-  parent.querySelectorAll('.tab-content').forEach(c=>c.style.display='none');
-  const target = document.getElementById(tabId);
-  if(target) target.style.display='block';
 }
 
 // ══════════════════════════════════════════════════════════
