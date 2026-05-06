@@ -164,7 +164,6 @@ label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spa
 }
 .empty-icon { font-size:48px; margin-bottom:16px; opacity:0.3; }
 
-/* ── LIGAS PAGE ── */
 .liga-selector {
   display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap; align-items:center;
 }
@@ -370,7 +369,7 @@ label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spa
   <div class="scanner-header">
     <div class="scanner-info">
       <h2>⚡ Scanner v2 — Online</h2>
-      <p>19 ligas · Back/Back + Back/Lay · Intervalo 45min · 9h-21h GMT+1</p>
+      <p>Back/Back + Back/Lay · Intervalo 45min · 9h-21h GMT+1</p>
     </div>
     <div class="scanner-meta">
       <div class="meta-item">
@@ -878,7 +877,6 @@ function showPage(page){
     if(l.getAttribute('onclick')?.includes("'"+page+"'")) l.classList.add('active');
   });
 
-  if(page==='ligas') loadLiga();
   if(page==='casas') renderCasas();
   if(page==='stats') renderStats();
   if(page==='registo') renderRegisto();
