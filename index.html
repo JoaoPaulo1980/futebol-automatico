@@ -859,8 +859,14 @@ label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spa
 
 <script>
 const AF_KEY = 'f1353f09a4b7b604f6fcc7f22d950fe3';
-const AF_BASE = 'https://v3.football.api-sports.io';
-const PROXY = 'https://corsproxy.io/?';
+// TheSportsDB — gratuita, sem chave, CORS nativo, cobre todas as ligas
+const TSDB = 'https://www.thesportsdb.com/api/v1/json/123';
+const TSDB_MAP = {
+  '39':4328,'40':4329,'140':4335,'78':4331,'135':4332,
+  '2':4480,'88':4337,'61':4334,'94':4344,'179':4330,
+  '203':4343,'144':4396,'197':4400,'3':4481,'848':4482,
+  '253':4346,'103':4345,'113':4351
+};
 
 // ── CASAS UK PRÉ-CARREGADAS ──────────────────────────────
 const CASAS_UK = [
@@ -1027,14 +1033,11 @@ function removeArb(idx){
 }
 
 // ══════════════════════════════════════════════════════════
-// LIGAS — API-Football via CORS proxy
+// LIGAS — TheSportsDB (gratuita, CORS nativo, 19 ligas)
 // ══════════════════════════════════════════════════════════
-async function afApi(endpoint){
+async function tsdbGet(url){
   try {
-    const url = PROXY + encodeURIComponent(AF_BASE + endpoint);
-    const res = await fetch(url, {
-      headers:{ 'x-apisports-key': AF_KEY }
-    });
+    const res = await fetch(url);
     if(!res.ok) return null;
     return await res.json();
   } catch(e){ return null; }
@@ -1054,79 +1057,89 @@ async function loadLiga(){
   const ligaId = document.getElementById('liga-select').value;
   const season = state.currentSeason;
   const cacheKey = ligaId+'_'+season;
-  const content = document.getElementById('liga-content');
-  content.innerHTML = `<div class="loading"><div class="spinner"></div> A carregar...</div>`;
+  const el = document.getElementById('liga-content');
+  el.innerHTML = `<div class="loading"><div class="spinner"></div> A carregar...</div>`;
 
-  if(ligaCache[cacheKey]){
-    renderLigaData(ligaCache[cacheKey]);
+  if(ligaCache[cacheKey]){ renderLigaData(ligaCache[cacheKey]); return; }
+
+  const tsdbId = TSDB_MAP[ligaId];
+  if(!tsdbId){
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">🌍</div><p>Liga não disponível</p></div>`;
     return;
   }
 
-  const [standings, fixtures, results] = await Promise.all([
-    afApi(`/standings?league=${ligaId}&season=${season}`),
-    afApi(`/fixtures?league=${ligaId}&season=${season}&next=10`),
-    afApi(`/fixtures?league=${ligaId}&season=${season}&last=10&status=FT`),
+  const seasonStr = season === 2025 ? '2025-2026' : '2024-2025';
+
+  const [standings, pastEvents, nextEvents] = await Promise.all([
+    tsdbGet(`${TSDB}/lookuptable.php?l=${tsdbId}&s=${seasonStr}`),
+    tsdbGet(`${TSDB}/eventspastleague.php?id=${tsdbId}`),
+    tsdbGet(`${TSDB}/eventsnextleague.php?id=${tsdbId}`),
   ]);
 
-  const data = {standings, fixtures, results};
+  const data = {standings, pastEvents, nextEvents};
   ligaCache[cacheKey] = data;
   renderLigaData(data);
 }
 
 function renderLigaData(data){
-  const content = document.getElementById('liga-content');
+  const el = document.getElementById('liga-content');
   let html = `<div class="tabs">
     <div class="tab active" onclick="switchTab(this,'tab-standings')">Classificação</div>
     <div class="tab" onclick="switchTab(this,'tab-results')">Resultados</div>
     <div class="tab" onclick="switchTab(this,'tab-fixtures')">Próximos</div>
   </div>`;
 
-  // STANDINGS
+  // STANDINGS — TheSportsDB format
   html += `<div id="tab-standings" class="tab-content">`;
-  const standings = data.standings?.response?.[0]?.league?.standings?.[0];
-  if(standings && standings.length){
+  const tbl = data.standings?.table;
+  if(tbl && tbl.length){
     html += `<div class="card"><table class="standings-table">
-      <thead><tr><th>#</th><th>Equipa</th><th>J</th><th>V</th><th>E</th><th>D</th><th>GM</th><th>GS</th><th>Pts</th><th>Forma</th></tr></thead><tbody>`;
-    standings.forEach(t => {
-      const form = (t.form||'').split('').slice(-5).map(f=>
-        `<span class="form-badge form-${f}">${f}</span>`
-      ).join('');
+      <thead><tr><th>#</th><th>Equipa</th><th>J</th><th>V</th><th>E</th><th>D</th><th>GM</th><th>GS</th><th>DG</th><th>Pts</th><th>Forma</th></tr></thead><tbody>`;
+    tbl.forEach(t => {
+      const form = (t.strForm||'').split('').slice(-5).map(f=>{
+        const r = f==='W'?'W':f==='D'?'D':'L';
+        return `<span class="form-badge form-${r}">${r}</span>`;
+      }).join('');
+      const dg = parseInt(t.intGoalDifference||0);
+      const dgStr = dg > 0 ? '+'+dg : dg;
       html += `<tr>
-        <td>${t.rank}</td>
-        <td class="team-name">${t.team.name}</td>
-        <td>${t.all.played}</td>
-        <td>${t.all.win}</td>
-        <td>${t.all.draw}</td>
-        <td>${t.all.lose}</td>
-        <td>${t.all.goals.for}</td>
-        <td>${t.all.goals.against}</td>
-        <td class="pts">${t.points}</td>
+        <td>${t.intRank}</td>
+        <td class="team-name">${t.strTeam}</td>
+        <td>${t.intPlayed}</td>
+        <td>${t.intWin}</td>
+        <td>${t.intDraw}</td>
+        <td>${t.intLoss}</td>
+        <td>${t.intGoalsFor}</td>
+        <td>${t.intGoalsAgainst}</td>
+        <td>${dgStr}</td>
+        <td class="pts">${t.intPoints}</td>
         <td>${form}</td>
       </tr>`;
     });
     html += `</tbody></table></div>`;
   } else {
-    html += `<div class="empty-state"><div class="empty-icon">📊</div><p>Classificação não disponível</p></div>`;
+    html += `<div class="empty-state"><div class="empty-icon">📊</div><p>Classificação não disponível para esta época</p></div>`;
   }
   html += `</div>`;
 
-  // RESULTS
+  // RESULTS — TheSportsDB past events
   html += `<div id="tab-results" class="tab-content" style="display:none">`;
-  const results = data.results?.response;
+  const results = data.pastEvents?.events;
   if(results && results.length){
     html += `<div class="card"><div class="fixtures-list">`;
-    results.slice().reverse().forEach(f => {
-      const d = new Date(f.fixture.date);
+    [...results].slice(-10).reverse().forEach(f => {
+      const d = new Date(f.dateEvent+'T'+(f.strTime||'12:00:00'));
       const dateStr = d.toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit'});
-      const score = `${f.goals.home} - ${f.goals.away}`;
+      const sh = f.intHomeScore ?? '-';
+      const sa = f.intAwayScore ?? '-';
       html += `<div class="fixture-row">
         <div class="fixture-teams">
-          <span>${f.teams.home.name}</span>
+          <span>${f.strHomeTeam}</span>
           <span class="fixture-vs">vs</span>
-          <span>${f.teams.away.name}</span>
+          <span>${f.strAwayTeam}</span>
         </div>
         <div style="display:flex;gap:12px;align-items:center">
-          <span class="fixture-score">${score}</span>
+          <span class="fixture-score">${sh} - ${sa}</span>
           <span class="fixture-date">${dateStr}</span>
         </div>
       </div>`;
@@ -1137,20 +1150,20 @@ function renderLigaData(data){
   }
   html += `</div>`;
 
-  // FIXTURES
+  // FIXTURES — TheSportsDB next events
   html += `<div id="tab-fixtures" class="tab-content" style="display:none">`;
-  const fixtures = data.fixtures?.response;
+  const fixtures = data.nextEvents?.events;
   if(fixtures && fixtures.length){
     html += `<div class="card"><div class="fixtures-list">`;
-    fixtures.forEach(f => {
-      const d = new Date(f.fixture.date);
+    fixtures.slice(0,10).forEach(f => {
+      const d = new Date(f.dateEvent+'T'+(f.strTime||'12:00:00'));
       const dateStr = d.toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit'});
       const timeStr = d.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'});
       html += `<div class="fixture-row">
         <div class="fixture-teams">
-          <span>${f.teams.home.name}</span>
+          <span>${f.strHomeTeam}</span>
           <span class="fixture-vs">vs</span>
-          <span>${f.teams.away.name}</span>
+          <span>${f.strAwayTeam}</span>
         </div>
         <div style="display:flex;gap:12px;align-items:center">
           <span class="fixture-time">${timeStr}</span>
@@ -1164,7 +1177,7 @@ function renderLigaData(data){
   }
   html += `</div>`;
 
-  content.innerHTML = html;
+  el.innerHTML = html;
 }
 
 function switchTab(el, tabId){
