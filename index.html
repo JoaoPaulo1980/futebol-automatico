@@ -359,7 +359,7 @@ label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spa
     <button class="nav-link" onclick="showPage('stats')">Stats</button>
     <button class="nav-link" onclick="showPage('registo')">Registo</button>
     <button class="nav-link" onclick="showPage('calc')">Calc</button>
-    <button class="nav-link" onclick="showPage('odds')">Odds</button>
+    
   </div>
   <div class="nav-status">
     <div class="status-dot"></div>
@@ -440,24 +440,15 @@ label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spa
 
   <div class="liga-selector">
     <select id="liga-select" onchange="loadLiga()">
-      <option value="39">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League</option>
-      <option value="40">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Championship</option>
-      <option value="140">🇪🇸 La Liga</option>
-      <option value="78">🇩🇪 Bundesliga</option>
-      <option value="135">🇮🇹 Serie A</option>
-      <option value="2">🏆 Champions League</option>
-      <option value="88">🇳🇱 Eredivisie</option>
-      <option value="61">🇫🇷 Ligue 1</option>
-      <option value="94">🇵🇹 Primeira Liga</option>
-      <option value="179">🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scottish Premiership</option>
-      <option value="203">🇹🇷 Süper Lig</option>
-      <option value="144">🇧🇪 Jupiler Pro League</option>
-      <option value="197">🇬🇷 Super League Greece</option>
-      <option value="3">🇪🇺 Europa League</option>
-      <option value="848">🇪🇺 Conference League</option>
-      <option value="253">🇺🇸 MLS</option>
-      <option value="103">🇳🇴 Eliteserien</option>
-      <option value="113">🇸🇪 Allsvenskan</option>
+      <option value="PL">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League</option>
+      <option value="ELC">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Championship</option>
+      <option value="PD">🇪🇸 La Liga</option>
+      <option value="BL1">🇩🇪 Bundesliga</option>
+      <option value="SA">🇮🇹 Serie A</option>
+      <option value="CL">🏆 Champions League</option>
+      <option value="DED">🇳🇱 Eredivisie</option>
+      <option value="FL1">🇫🇷 Ligue 1</option>
+      <option value="PPL">🇵🇹 Primeira Liga</option>
     </select>
     <div class="season-toggle">
       <button class="season-btn active" id="btn-2025" onclick="setSeason(2025)">2025/26</button>
@@ -858,8 +849,8 @@ label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spa
 <div class="toast" id="toast"></div>
 
 <script>
-const API_FOOTBALL_KEY = 'f1353f09a4b7b604f6fcc7f22d950fe3';
-const API_BASE = 'https://v3.football.api-sports.io';
+const FD_KEY = 'a68c4c767798487b9dca56e1b92ffb2a';
+const FD_BASE = 'https://api.football-data.org/v4';
 
 // ── CASAS UK PRÉ-CARREGADAS ──────────────────────────────
 const CASAS_UK = [
@@ -1026,13 +1017,14 @@ function removeArb(idx){
 }
 
 // ══════════════════════════════════════════════════════════
-// LIGAS — API Football
+// LIGAS — football-data.org
 // ══════════════════════════════════════════════════════════
-async function apiFootball(endpoint){
+async function fdApi(endpoint){
   try {
-    const res = await fetch(API_BASE+endpoint, {
-      headers:{ 'x-apisports-key': API_FOOTBALL_KEY }
+    const res = await fetch(FD_BASE+endpoint, {
+      headers:{ 'X-Auth-Token': FD_KEY }
     });
+    if(!res.ok) return null;
     return await res.json();
   } catch(e){ return null; }
 }
@@ -1041,30 +1033,30 @@ function setSeason(s){
   state.currentSeason=s;
   document.getElementById('btn-2025').classList.toggle('active',s===2025);
   document.getElementById('btn-2024').classList.toggle('active',s===2024);
+  ligaCache={};
   loadLiga();
 }
 
 let ligaCache = {};
 
 async function loadLiga(){
-  const ligaId = document.getElementById('liga-select').value;
+  const code = document.getElementById('liga-select').value;
   const season = state.currentSeason;
-  const cacheKey = ligaId+'_'+season;
+  const cacheKey = code+'_'+season;
   const content = document.getElementById('liga-content');
-  content.innerHTML = `<div class="loading"><div class="spinner"></div> A carregar dados da API...</div>`;
+  content.innerHTML = `<div class="loading"><div class="spinner"></div> A carregar...</div>`;
 
   if(ligaCache[cacheKey]){
     renderLigaData(ligaCache[cacheKey]);
     return;
   }
 
-  const [standings, fixtures, results] = await Promise.all([
-    apiFootball(`/standings?league=${ligaId}&season=${season}`),
-    apiFootball(`/fixtures?league=${ligaId}&season=${season}&next=8`),
-    apiFootball(`/fixtures?league=${ligaId}&season=${season}&last=8&status=FT`),
+  const [standings, matches] = await Promise.all([
+    fdApi(`/competitions/${code}/standings?season=${season}`),
+    fdApi(`/competitions/${code}/matches?season=${season}&limit=20`),
   ]);
 
-  const data = {standings, fixtures, results};
+  const data = {standings, matches};
   ligaCache[cacheKey] = data;
   renderLigaData(data);
 }
