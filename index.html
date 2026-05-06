@@ -353,6 +353,7 @@ label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spa
     <button class="nav-link" onclick="showPage('stats')">Stats</button>
     <button class="nav-link" onclick="showPage('registo')">Registo</button>
     <button class="nav-link" onclick="showPage('calc')">Calc</button>
+    <button class="nav-link" onclick="showPage('ciclos')">Ciclos</button>
     
   </div>
   <div class="nav-status">
@@ -659,6 +660,138 @@ label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spa
 ══════════════════════════════════════════ -->
 <div class="page" id="page-odds" style="display:none"></div>
 
+
+<!-- CICLOS PAGE -->
+<div class="page" id="page-ciclos">
+  <div class="section-header">
+    <div class="section-title">🎯 Calculadora de Ciclos</div>
+  </div>
+
+  <!-- Capital e Distribuição -->
+  <div class="grid-3" style="margin-bottom:20px">
+    <div class="stat-card">
+      <div class="stat-label">Capital do Ciclo (£)</div>
+      <input type="number" id="ci-capital" value="100" step="50" oninput="renderCiclo()" style="margin-top:8px;font-size:20px;font-weight:700;color:var(--green)">
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Stake Principal (%)</div>
+      <input type="number" id="ci-pct" value="70" min="1" max="99" oninput="renderCiclo()" style="margin-top:8px;font-size:20px;font-weight:700;color:var(--blue)">
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Odds Mínimas Alvo</div>
+      <input type="number" id="ci-min-odds" value="3.00" step="0.1" oninput="renderCiclo()" style="margin-top:8px;font-size:20px;font-weight:700;color:var(--yellow)">
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- ENTRADA PRINCIPAL -->
+    <div class="card">
+      <div class="card-title">🔵 Entrada Principal (Duplo/Triplo)</div>
+      <div id="ci-legs"></div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn btn-outline" style="flex:1" onclick="addLeg()">+ Perna</button>
+        <button class="btn btn-red" style="flex:1" onclick="removeLeg()">− Remover</button>
+      </div>
+
+      <!-- Odds combinadas -->
+      <div style="margin-top:16px;padding:16px;background:var(--bg2);border-radius:8px;border:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:1px">Odds Combinadas</span>
+          <span id="ci-combined-odds" style="font-size:28px;font-weight:700;color:var(--green)">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:8px">
+          <span style="color:var(--muted);font-size:11px">Stake Principal</span>
+          <span id="ci-principal-stake" style="color:var(--blue);font-weight:600">£—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px">
+          <span style="color:var(--muted);font-size:11px">Lucro se ganhar</span>
+          <span id="ci-principal-profit" style="color:var(--green);font-weight:700">£—</span>
+        </div>
+        <div id="ci-odds-warning" style="margin-top:8px;font-size:11px;color:var(--red);display:none">
+          ⚠️ Odds abaixo do mínimo de <span id="ci-min-display">3.00</span>x
+        </div>
+      </div>
+    </div>
+
+    <!-- ENTRADA DE SEGURANÇA -->
+    <div class="card">
+      <div class="card-title">🛡️ Entrada de Segurança</div>
+
+      <div class="form-group">
+        <label>Tipo de Segurança</label>
+        <select id="ci-safety-type" onchange="renderCiclo()">
+          <option value="lay">🟡 Lay (Exchange)</option>
+          <option value="back">🔵 Back (Casa Normal)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Mercado / Selecção</label>
+        <input type="text" id="ci-safety-market" placeholder="ex: BTTS Não, Under 2.5, Empate" oninput="renderCiclo()">
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label>Odds</label>
+          <input type="number" id="ci-safety-odds" value="2.00" step="0.01" oninput="renderCiclo()">
+        </div>
+        <div class="form-group">
+          <label>Casa</label>
+          <input type="text" id="ci-safety-house" placeholder="ex: Smarkets" oninput="renderCiclo()">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Comissão Exchange (%)</label>
+        <input type="number" id="ci-safety-comm" value="2" step="0.5" oninput="renderCiclo()">
+      </div>
+
+      <div style="padding:16px;background:var(--bg2);border-radius:8px;border:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:1px">Stake Segurança</span>
+          <span id="ci-safety-stake" style="font-weight:600;color:var(--yellow)">£—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px">
+          <span style="color:var(--muted);font-size:11px" id="ci-safety-win-label">Se segurança vence</span>
+          <span id="ci-safety-win" style="color:var(--green);font-weight:600">£—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px" id="ci-liability-row" style="display:none">
+          <span style="color:var(--muted);font-size:11px">Liability (bloqueado)</span>
+          <span id="ci-liability" style="color:var(--red);font-weight:600">£—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENÁRIOS -->
+  <div class="card" style="margin-top:0">
+    <div class="card-title">📊 Cenários do Ciclo</div>
+    <div id="ci-scenarios" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:8px"></div>
+  </div>
+
+  <!-- RESUMO DO CICLO -->
+  <div id="ci-summary" style="margin-top:16px"></div>
+
+  <!-- HISTÓRICO DE CICLOS -->
+  <div class="card" style="margin-top:16px">
+    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+      <span>Histórico de Ciclos</span>
+      <button class="btn btn-green" onclick="saveCiclo()" style="font-size:11px;padding:5px 12px">💾 Guardar Ciclo</button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Data</th><th>Pernas</th><th>Odds</th><th>Stake</th><th>Resultado</th><th>P&L</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="ci-history"></tbody>
+    </table>
+    <div id="ci-history-empty" class="empty-state" style="padding:30px">
+      <p>Sem ciclos guardados</p>
+    </div>
+  </div>
+</div>
+
 </main>
 
 <!-- BOTTOM NAV -->
@@ -679,9 +812,9 @@ label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spa
   <div class="bnav-item" onclick="showPage('calc')">
     <div class="bnav-icon">🔢</div><div class="bnav-label">Calc</div>
   </div>
-</div>
-
-<!-- MODALS -->
+  <div class="bnav-item" onclick="showPage('ciclos')">
+    <div class="bnav-icon">🎯</div><div class="bnav-label">Ciclos</div>
+  </div>
 <div class="modal-overlay" id="modal-arb">
   <div class="modal">
     <h3>Registar Arb</h3>
@@ -882,6 +1015,7 @@ function showPage(page){
   if(page==='registo') renderRegisto();
   if(page==='monitor') renderMonitor();
   if(page==='calc'){ calcBackLay(); initArbCalc(); }
+  if(page==='ciclos') renderCiclo();
 }
 
 // ── TOAST ────────────────────────────────────────────────
@@ -1326,6 +1460,283 @@ function decToAmer(dec){
 // ══════════════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════
+// CICLOS
+// ══════════════════════════════════════════════════════════
+let legs = [
+  {market:'Over 2.5', odds:1.75, house:'Bet365'},
+  {market:'BTTS Sim', odds:1.80, house:'Coral'},
+];
+let cicloHistory = JSON.parse(localStorage.getItem('fa_ciclos')||'[]');
+
+function addLeg(){
+  if(legs.length>=4){toast('Máximo 4 pernas!');return;}
+  legs.push({market:'',odds:2.00,house:''});
+  renderCiclo();
+}
+
+function removeLeg(){
+  if(legs.length<=2){toast('Mínimo 2 pernas!');return;}
+  legs.pop();
+  renderCiclo();
+}
+
+function renderLegs(){
+  const container = document.getElementById('ci-legs');
+  container.innerHTML = legs.map((l,i)=>`
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;margin-bottom:10px;align-items:end">
+      <div>
+        ${i===0?'<label>Mercado</label>':''}
+        <input type="text" value="${l.market}" placeholder="ex: Over 2.5" 
+          oninput="legs[${i}].market=this.value;calcCiclo()" style="width:100%">
+      </div>
+      <div>
+        ${i===0?'<label>Odds</label>':''}
+        <input type="number" value="${l.odds}" step="0.01" min="1.01"
+          oninput="legs[${i}].odds=parseFloat(this.value)||1;calcCiclo()" style="width:100%">
+      </div>
+      <div>
+        ${i===0?'<label>Casa</label>':''}
+        <input type="text" value="${l.house}" placeholder="Casa"
+          oninput="legs[${i}].house=this.value" style="width:100%">
+      </div>
+    </div>
+  `).join('');
+}
+
+function calcCiclo(){
+  const capital = parseFloat(document.getElementById('ci-capital').value)||100;
+  const pct = parseFloat(document.getElementById('ci-pct').value)||70;
+  const minOdds = parseFloat(document.getElementById('ci-min-odds').value)||3.00;
+  const safetyType = document.getElementById('ci-safety-type').value;
+  const safetyOdds = parseFloat(document.getElementById('ci-safety-odds').value)||2.00;
+  const safetyComm = (parseFloat(document.getElementById('ci-safety-comm').value)||2)/100;
+
+  const principalStake = capital * pct/100;
+  const safetyStake = capital - principalStake;
+
+  // Combined odds
+  const combinedOdds = legs.reduce((acc,l)=>acc*(parseFloat(l.odds)||1),1);
+  
+  // Principal profit if wins
+  const principalProfit = principalStake * (combinedOdds-1);
+  const principalProfitTotal = principalProfit - safetyStake; // lose safety
+  
+  // Safety calculations
+  let safetyWinAmt, safetyLoseAmt, liability=0;
+  if(safetyType==='lay'){
+    // Lay: win safetyStake if bet loses, lose liability if bet wins
+    liability = safetyStake*(safetyOdds-1);
+    const safetyWinNet = safetyStake*(1-safetyComm);
+    safetyWinAmt = safetyWinNet; // net after commission
+    safetyLoseAmt = -liability;
+  } else {
+    // Back: win odds*stake if wins
+    safetyWinAmt = safetyStake*(safetyOdds-1);
+    safetyLoseAmt = -safetyStake;
+  }
+
+  // SCENARIOS
+  // 1. Principal wins + safety loses
+  const s1 = principalProfit + safetyLoseAmt;
+  const s1pct = (s1/capital*100);
+  
+  // 2. Principal loses + safety wins  
+  const s2 = -principalStake + safetyWinAmt;
+  const s2pct = (s2/capital*100);
+  
+  // 3. Both lose (worst case)
+  const s3 = -principalStake + safetyLoseAmt;
+  const s3pct = (s3/capital*100);
+
+  // Update UI
+  const oddsEl = document.getElementById('ci-combined-odds');
+  const oddsOk = combinedOdds >= minOdds;
+  oddsEl.textContent = combinedOdds.toFixed(2)+'x';
+  oddsEl.style.color = oddsOk?'var(--green)':'var(--red)';
+  
+  document.getElementById('ci-principal-stake').textContent = '£'+principalStake.toFixed(2);
+  document.getElementById('ci-principal-profit').textContent = '+£'+principalProfit.toFixed(2);
+  document.getElementById('ci-odds-warning').style.display = oddsOk?'none':'block';
+  document.getElementById('ci-min-display').textContent = minOdds.toFixed(2);
+  
+  document.getElementById('ci-safety-stake').textContent = '£'+safetyStake.toFixed(2);
+  document.getElementById('ci-safety-win').textContent = (safetyWinAmt>=0?'+':'')+'£'+safetyWinAmt.toFixed(2);
+  document.getElementById('ci-safety-win-label').textContent = safetyType==='lay'?'Se lay vence (aposta principal perde)':'Se back vence';
+  
+  const liabRow = document.getElementById('ci-liability-row');
+  if(safetyType==='lay'){
+    liabRow.style.display='flex';
+    document.getElementById('ci-liability').textContent = '£'+liability.toFixed(2);
+  } else {
+    liabRow.style.display='none';
+  }
+
+  // Render scenarios
+  const scenarios = [
+    {
+      label:'✅ Principal Ganha',
+      desc: safetyType==='lay'?'Aposta ganha, lay perde':'Aposta ganha, back perde',
+      val: s1,
+      pct: s1pct,
+      color: s1>=0?'var(--green)':'var(--red)',
+      bg: s1>=0?'rgba(0,255,135,0.05)':'rgba(255,77,109,0.05)',
+      border: s1>=0?'rgba(0,255,135,0.2)':'rgba(255,77,109,0.2)'
+    },
+    {
+      label:'🛡️ Principal Perde',
+      desc: safetyType==='lay'?'Aposta perde, lay vence':'Aposta perde, back vence',
+      val: s2,
+      pct: s2pct,
+      color: s2>=0?'var(--green)':'var(--red)',
+      bg: s2>=0?'rgba(0,255,135,0.05)':'rgba(255,77,109,0.05)',
+      border: s2>=0?'rgba(0,255,135,0.2)':'rgba(255,77,109,0.2)'
+    },
+    {
+      label:'💥 Ambas Perdem',
+      desc:'Pior cenário possível',
+      val: s3,
+      pct: s3pct,
+      color:'var(--red)',
+      bg:'rgba(255,77,109,0.05)',
+      border:'rgba(255,77,109,0.2)'
+    }
+  ];
+
+  document.getElementById('ci-scenarios').innerHTML = scenarios.map(s=>`
+    <div style="background:${s.bg};border:1px solid ${s.border};border-radius:10px;padding:16px;text-align:center">
+      <div style="font-size:12px;font-weight:600;margin-bottom:8px">${s.label}</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:12px">${s.desc}</div>
+      <div style="font-size:32px;font-weight:800;color:${s.color};font-family:'Syne',sans-serif">
+        ${s.val>=0?'+':''}${s.pct.toFixed(1)}%
+      </div>
+      <div style="font-size:14px;color:${s.color};margin-top:4px;font-weight:600">
+        ${s.val>=0?'+':''}£${Math.abs(s.val).toFixed(2)}
+      </div>
+    </div>
+  `).join('');
+
+  // Summary
+  const maxRed = Math.min(s2pct, s3pct);
+  const maxGreen = s1pct;
+  const riskOk = maxRed >= -25;
+  const profitOk = maxGreen >= 100;
+
+  document.getElementById('ci-summary').innerHTML = `
+    <div style="background:${riskOk&&profitOk?'rgba(0,255,135,0.05)':'rgba(255,215,0,0.05)'};
+      border:1px solid ${riskOk&&profitOk?'rgba(0,255,135,0.2)':'rgba(255,215,0,0.2)'};
+      border-radius:12px;padding:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:4px">
+          ${riskOk&&profitOk&&oddsOk?'✅ Ciclo dentro dos parâmetros':'⚠️ Ajustar parâmetros'}
+        </div>
+        <div style="font-size:11px;color:var(--muted)">
+          ${!oddsOk?'❌ Odds abaixo do mínimo · ':''}
+          ${!profitOk?'❌ Lucro abaixo de 100% · ':''}
+          ${!riskOk?'❌ Red acima de 25% · ':''}
+          ${riskOk&&profitOk&&oddsOk?'Todos os critérios cumpridos':''}
+        </div>
+      </div>
+      <div style="display:flex;gap:24px;text-align:center">
+        <div>
+          <div style="font-size:10px;color:var(--muted)">Lucro Máx</div>
+          <div style="font-size:20px;font-weight:700;color:var(--green)">+${maxGreen.toFixed(1)}%</div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--muted)">Red Máx</div>
+          <div style="font-size:20px;font-weight:700;color:var(--red)">${maxRed.toFixed(1)}%</div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--muted)">Odds</div>
+          <div style="font-size:20px;font-weight:700;color:${oddsOk?'var(--green)':'var(--red)'}">
+            ${combinedOdds.toFixed(2)}x
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  renderCicloHistory();
+}
+
+function renderCiclo(){
+  renderLegs();
+  calcCiclo();
+}
+
+function saveCiclo(){
+  const capital = parseFloat(document.getElementById('ci-capital').value)||100;
+  const combinedOdds = legs.reduce((acc,l)=>acc*(parseFloat(l.odds)||1),1);
+  const pct = parseFloat(document.getElementById('ci-pct').value)||70;
+  const principalStake = capital*pct/100;
+  const legsStr = legs.map(l=>l.market||'—').join(' × ');
+  
+  const ciclo = {
+    data: new Date().toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}),
+    pernas: legsStr,
+    odds: combinedOdds.toFixed(2),
+    stake: principalStake.toFixed(2),
+    resultado: 'pendente',
+    pl: 0,
+    id: Date.now()
+  };
+  
+  cicloHistory.unshift(ciclo);
+  localStorage.setItem('fa_ciclos', JSON.stringify(cicloHistory));
+  renderCicloHistory();
+  toast('✅ Ciclo guardado!');
+}
+
+function renderCicloHistory(){
+  const tbody = document.getElementById('ci-history');
+  const empty = document.getElementById('ci-history-empty');
+  if(!cicloHistory.length){
+    tbody.innerHTML=''; empty.style.display='block'; return;
+  }
+  empty.style.display='none';
+  tbody.innerHTML = cicloHistory.slice(0,10).map((c,i)=>{
+    const resBadge = c.resultado==='green'?'badge-green':c.resultado==='red'?'badge-red':'badge-blue';
+    const resLabel = c.resultado==='green'?'✅ Green':c.resultado==='red'?'❌ Red':'⏳ Pendente';
+    return `<tr>
+      <td>${c.data}</td>
+      <td style="font-size:11px">${c.pernas}</td>
+      <td style="color:var(--yellow)">${c.odds}x</td>
+      <td>£${c.stake}</td>
+      <td>
+        <select style="width:auto;padding:3px;font-size:10px" onchange="updateCicloResult(${i},this.value)">
+          <option value="pendente" ${c.resultado==='pendente'?'selected':''}>⏳</option>
+          <option value="green" ${c.resultado==='green'?'selected':''}>✅</option>
+          <option value="red" ${c.resultado==='red'?'selected':''}>❌</option>
+        </select>
+      </td>
+      <td style="color:${c.pl>=0?'var(--green)':'var(--red)'}">
+        <input type="number" value="${c.pl}" step="0.01" 
+          style="width:70px;padding:3px;font-size:11px" 
+          onchange="updateCicloPL(${i},this.value)">
+      </td>
+      <td><button class="btn btn-red" style="font-size:10px;padding:3px 8px" onclick="deleteCiclo(${i})">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function updateCicloResult(i, val){
+  cicloHistory[i].resultado = val;
+  localStorage.setItem('fa_ciclos', JSON.stringify(cicloHistory));
+  renderCicloHistory();
+}
+
+function updateCicloPL(i, val){
+  cicloHistory[i].pl = parseFloat(val)||0;
+  localStorage.setItem('fa_ciclos', JSON.stringify(cicloHistory));
+}
+
+function deleteCiclo(i){
+  cicloHistory.splice(i,1);
+  localStorage.setItem('fa_ciclos', JSON.stringify(cicloHistory));
+  renderCicloHistory();
+}
+
 window.addEventListener('click', e => {
   if(e.target.classList.contains('modal-overlay')) e.target.classList.remove('open');
 });
