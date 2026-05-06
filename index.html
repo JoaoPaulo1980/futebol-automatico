@@ -440,15 +440,24 @@ label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spa
 
   <div class="liga-selector">
     <select id="liga-select" onchange="loadLiga()">
-      <option value="PL">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League</option>
-      <option value="ELC">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Championship</option>
-      <option value="PD">🇪🇸 La Liga</option>
-      <option value="BL1">🇩🇪 Bundesliga</option>
-      <option value="SA">🇮🇹 Serie A</option>
-      <option value="CL">🏆 Champions League</option>
-      <option value="DED">🇳🇱 Eredivisie</option>
-      <option value="FL1">🇫🇷 Ligue 1</option>
-      <option value="PPL">🇵🇹 Primeira Liga</option>
+      <option value="39">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League</option>
+      <option value="40">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Championship</option>
+      <option value="140">🇪🇸 La Liga</option>
+      <option value="78">🇩🇪 Bundesliga</option>
+      <option value="135">🇮🇹 Serie A</option>
+      <option value="2">🏆 Champions League</option>
+      <option value="88">🇳🇱 Eredivisie</option>
+      <option value="61">🇫🇷 Ligue 1</option>
+      <option value="94">🇵🇹 Primeira Liga</option>
+      <option value="179">🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scottish Premiership</option>
+      <option value="203">🇹🇷 Süper Lig</option>
+      <option value="144">🇧🇪 Jupiler Pro League</option>
+      <option value="197">🇬🇷 Super League Greece</option>
+      <option value="3">🇪🇺 Europa League</option>
+      <option value="848">🇪🇺 Conference League</option>
+      <option value="253">🇺🇸 MLS</option>
+      <option value="103">🇳🇴 Eliteserien</option>
+      <option value="113">🇸🇪 Allsvenskan</option>
     </select>
     <div class="season-toggle">
       <button class="season-btn active" id="btn-2025" onclick="setSeason(2025)">2025/26</button>
@@ -849,8 +858,9 @@ label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spa
 <div class="toast" id="toast"></div>
 
 <script>
-const FD_KEY = 'a68c4c767798487b9dca56e1b92ffb2a';
-const FD_BASE = 'https://api.football-data.org/v4';
+const AF_KEY = 'f1353f09a4b7b604f6fcc7f22d950fe3';
+const AF_BASE = 'https://v3.football.api-sports.io';
+const PROXY = 'https://corsproxy.io/?';
 
 // ── CASAS UK PRÉ-CARREGADAS ──────────────────────────────
 const CASAS_UK = [
@@ -1017,12 +1027,13 @@ function removeArb(idx){
 }
 
 // ══════════════════════════════════════════════════════════
-// LIGAS — football-data.org
+// LIGAS — API-Football via CORS proxy
 // ══════════════════════════════════════════════════════════
-async function fdApi(endpoint){
+async function afApi(endpoint){
   try {
-    const res = await fetch(FD_BASE+endpoint, {
-      headers:{ 'X-Auth-Token': FD_KEY }
+    const url = PROXY + encodeURIComponent(AF_BASE + endpoint);
+    const res = await fetch(url, {
+      headers:{ 'x-apisports-key': AF_KEY }
     });
     if(!res.ok) return null;
     return await res.json();
@@ -1040,9 +1051,9 @@ function setSeason(s){
 let ligaCache = {};
 
 async function loadLiga(){
-  const code = document.getElementById('liga-select').value;
+  const ligaId = document.getElementById('liga-select').value;
   const season = state.currentSeason;
-  const cacheKey = code+'_'+season;
+  const cacheKey = ligaId+'_'+season;
   const content = document.getElementById('liga-content');
   content.innerHTML = `<div class="loading"><div class="spinner"></div> A carregar...</div>`;
 
@@ -1051,12 +1062,13 @@ async function loadLiga(){
     return;
   }
 
-  const [standings, matches] = await Promise.all([
-    fdApi(`/competitions/${code}/standings?season=${season}`),
-    fdApi(`/competitions/${code}/matches?season=${season}&limit=20`),
+  const [standings, fixtures, results] = await Promise.all([
+    afApi(`/standings?league=${ligaId}&season=${season}`),
+    afApi(`/fixtures?league=${ligaId}&season=${season}&next=10`),
+    afApi(`/fixtures?league=${ligaId}&season=${season}&last=10&status=FT`),
   ]);
 
-  const data = {standings, matches};
+  const data = {standings, fixtures, results};
   ligaCache[cacheKey] = data;
   renderLigaData(data);
 }
